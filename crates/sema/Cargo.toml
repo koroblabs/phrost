@@ -1,0 +1,19 @@
+[package]
+name = "phrost-sema"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Flattening a PHP class hierarchy into the members it actually has."
+
+[dependencies]
+lspkit-memsize.workspace = true
+phrost-model.workspace = true
+phrost-ty.workspace = true
+rustc-hash.workspace = true
+
+[dev-dependencies]
+expect-test.workspace = true
+
+[lints]
+workspace = true

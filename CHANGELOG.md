@@ -1,0 +1,51 @@
+# Changelog
+
+A release's section is its notes on GitHub: the release workflow publishes the section whose heading
+names the tag's version.
+
+## 0.1.0
+
+The first release.
+
+**The language server**, `phrost serve`, over stdio, for Zed, Neovim, Helix, Claude Code and any
+other LSP client:
+
+- go to definition, declaration, type definition and implementation; find references; document
+  highlight; call and type hierarchy; document and workspace symbols;
+- completion of members, names, array keys and docblock tags, with commit characters; signature
+  help; hover with rendered docblocks; inlay hints;
+- rename, including moving a file together with the namespace it declares; code actions for imports,
+  docblock updates and quick fixes, and `source.fixAll`;
+- semantic tokens, folding and selection ranges, and formatting in PER-CS, PSR-12, Laravel Pint,
+  Tempest, hackfmt and Drupal styles;
+- diagnostics as you type, and for the whole project in the background.
+
+**What it checks:** undefined classes, functions and members; argument, return and property type
+mismatches; strict null and `false` safety, where `?T` given for a `T` is reported on purpose;
+unhandled `match` cases; missing `@throws`; unused variables, imports and declarations; and mago's
+linter for style, safety and correctness.
+
+**Types:** `@template` with bounds and defaults, `@extends`, `@implements` and `@use`, conditional
+`@return` types, `class-string<T>`, array shapes and lists, `@phpstan-type` aliases, `@mixin`,
+`@phpstan-assert*`, `@param-closure-this`, and narrowing through guards and assertions. On the
+php-typing-conformance suite it passes more cases than PHPStan, phpantom, Mago, Psalm and
+intelephense.
+
+**Frameworks**, each behind its own contributor, none named by the generic code:
+
+- Drupal: the service container, entity types and their fields, routes, hooks, form element keys,
+  plugin annotations and attributes, `*.info.yml` namespaces, Twig templates, and a core installed
+  outside `vendor/`;
+- Laravel: Blade templates, Eloquent relations, accessors, casts and scopes, dynamic wheres, the
+  container's aliases, facades, translations, factories, console signatures and Livewire;
+- Symfony and Laravel through their own generics; PHPUnit, Mockery and Pest as they behave at
+  runtime.
+
+**Fast and lean.** On a production Drupal checkout of about 30 000 files, a cold server is ready in
+about 2 s at about 195 MB, and goto, hover and completion answer in well under 1 ms at the 95th
+percentile. Memory follows the project's own code, not `vendor/`.
+
+**The command line:** `phrost check` runs every diagnostic over a project as CI would, and
+`--ratchet` fails only when a count rises above a `phrost-baseline.toml` beside it. `index`,
+`coverage`, `query` and `perf` show what is indexed, how much resolves, what an editor would see at
+a position, and what each request costs.

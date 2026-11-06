@@ -1,0 +1,237 @@
+# cargo-about: the licenses of every crate linked into phrost, written into each release archive as
+# THIRD-PARTY-LICENSES.md (`just licenses`, `.github/workflows/release.yml`). The licenses accepted
+# are deny.toml's, with its one exception: MPL-2.0 for option-ext, which asks that a binary say where
+# the source is -- each crate is listed with its repository.
+accepted = [
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "CC0-1.0",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "MPL-2.0",
+]
+# The platforms a release is built for: a crate only another platform links is not in the binary.
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+]
+# What builds phrost or tests it is not in what is shipped.
+ignore-build-dependencies = true
+ignore-dev-dependencies = true
+# phrost's own crates are `publish = false`: they are this project, not a third party.
+private = { ignore = true }
+
+# Crates published without their license files, whose texts cargo-about would otherwise fill in from
+# the license's template (`Copyright (c) <year> <copyright holders>`).
+#
+# mago ships its licenses at the root of its repository, not in each crate: these are the files at
+# the commit 1.58.2 was published from (`.cargo_vcs_info.json`), fetched when the list is generated
+# and checked against their SHA-256. A mago bump whose files changed fails the generation until the
+# new checksums are written here; every mago crate of one release shares one commit.
+
+[mago-allocator.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-allocator.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-allocator.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-bytes.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-bytes.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-bytes.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-casing.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-casing.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-casing.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-collector.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-collector.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-collector.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-database.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-database.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-database.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-extension.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-extension.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-extension.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-formatter.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-formatter.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-formatter.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-linter.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-linter.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-linter.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-names.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-names.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-names.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-php-version.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-php-version.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-php-version.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-phpdoc-syntax.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-phpdoc-syntax.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-phpdoc-syntax.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-reporting.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-reporting.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-reporting.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-span.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-span.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-span.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-syntax-core.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-syntax-core.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-syntax-core.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-syntax.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-syntax.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-syntax.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-text-edit.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-text-edit.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-text-edit.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-word.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-word.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-word.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+# blink-alloc packs its licenses as `license/MIT` and `license/APACHE`, names cargo-about does not
+# look for.
+[blink-alloc.clarify]
+license = "MIT OR Apache-2.0"
+[[blink-alloc.clarify.files]]
+path = "license/MIT"
+license = "MIT"
+checksum = "92eb6b4c1bc1b28c40261f1cae007a80031a160cb4d88373b47ac4c505e023d6"
+[[blink-alloc.clarify.files]]
+path = "license/APACHE"
+license = "Apache-2.0"
+checksum = "d2408a99c7b25aff098f9de41ba2893a150b30e3dd6f3e4e09ab29905255cae7"

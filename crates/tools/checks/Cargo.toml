@@ -1,0 +1,13 @@
+[package]
+name = "phrost-checks"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Workspace-wide structural invariants, checked as tests."
+publish.workspace = true
+
+[dependencies]
+lspkit-arch.workspace = true
+
+[lints]
+workspace = true

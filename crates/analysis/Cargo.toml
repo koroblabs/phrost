@@ -1,0 +1,23 @@
+[package]
+name = "phrost-analysis"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Editor features over one index snapshot, with no protocol types in sight."
+
+[dependencies]
+phrost-model.workspace = true
+# The one lexical question a feature asks: whether PHP is what is written at an offset. See
+# `completion::opening_tag` -- outside the tags there is no prefix to read, and the tree cannot
+# say so because lowering drops inline HTML.
+phrost-syntax-features.workspace = true
+phrost-view.workspace = true
+
+[dev-dependencies]
+expect-test.workspace = true
+phrost-harness.workspace = true
+phrost-testkit.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,13 @@
+phrost
+Copyright 2026 Korob Labs <opensource@koroblabs.com>
+
+The PHP standard-library stubs built into phrost (third_party/php-prelude) are vendored from mago's
+prelude, Copyright 2024-present Seifeddine Gmati <azjezz@carthage.software>, licensed under MIT OR
+Apache-2.0, with local edits recorded in third_party/php-prelude/README.md.
+
+third_party/php-prelude/rdkafka.php is modified and consolidated from JetBrains/phpstorm-stubs,
+Copyright 2010-2023 JetBrains s.r.o., licensed under Apache-2.0; see rdkafka.NOTICE beside it.
+
+lspkit, the language-server base phrost is built on, contains code derived from tower-lsp
+(Copyright 2023 Eyal Kalderon) and tower-lsp-server (Copyright 2025 Milo Moisson), both licensed
+under MIT OR Apache-2.0.

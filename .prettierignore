@@ -1,0 +1,4 @@
+target/
+.claude/
+.phrost-cache/
+third_party/

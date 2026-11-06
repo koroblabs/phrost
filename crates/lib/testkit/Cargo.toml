@@ -1,0 +1,18 @@
+[package]
+name = "phrost-testkit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Inline multi-file PHP fixtures and snapshot helpers for phrost tests."
+
+[dependencies]
+lspkit-fixture.workspace = true
+phrost-model.workspace = true
+tempfile.workspace = true
+
+[dev-dependencies]
+expect-test.workspace = true
+
+[lints]
+workspace = true

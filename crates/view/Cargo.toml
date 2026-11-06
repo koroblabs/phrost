@@ -1,0 +1,27 @@
+[package]
+name = "phrost-view"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The only index API a feature may see: read-only projections over indexed facts."
+
+[dependencies]
+rustc-hash.workspace = true
+
+phrost-defmap.workspace = true
+phrost-body.workspace = true
+phrost-hir.workspace = true
+phrost-index.workspace = true
+phrost-model.workspace = true
+phrost-sema.workspace = true
+phrost-ty.workspace = true
+phrost-twig.workspace = true
+
+[dev-dependencies]
+expect-test.workspace = true
+phrost-harness.workspace = true
+phrost-testkit.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,131 @@
+[workspace]
+resolver = "3"
+members = [
+  "crates/analysis",
+  "crates/body",
+  "crates/cli",
+  "crates/framework",
+  "crates/lib/harness",
+  "crates/lsp",
+  "crates/lib/intern",
+  "crates/lib/testkit",
+  "crates/hir",
+  "crates/index",
+  "crates/defmap",
+  "crates/lower",
+  "crates/model",
+  "crates/project",
+  "crates/sema",
+  "crates/stubs",
+  "crates/syntax",
+  "crates/syntax-features",
+  "crates/ty",
+  "crates/twig",
+  "crates/vfs",
+  "crates/tools/checks",
+  "crates/view",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/koroblabs/phrost"
+homepage = "https://github.com/koroblabs/phrost"
+# Built and released as one binary, never published crate by crate: lspkit is a git dependency,
+# which crates.io does not accept.
+publish = false
+description = "A fast, resource-cheap PHP language server."
+
+[workspace.dependencies]
+# Internal — foundations
+phrost-analysis = { path = "crates/analysis" }
+phrost-body = { path = "crates/body" }
+phrost-cli = { path = "crates/cli" }
+phrost-framework = { path = "crates/framework" }
+phrost-harness = { path = "crates/lib/harness" }
+phrost-intern = { path = "crates/lib/intern" }
+phrost-hir = { path = "crates/hir" }
+phrost-index = { path = "crates/index" }
+phrost-lower = { path = "crates/lower" }
+phrost-defmap = { path = "crates/defmap" }
+phrost-project = { path = "crates/project" }
+phrost-sema = { path = "crates/sema" }
+phrost-view = { path = "crates/view" }
+phrost-lsp = { path = "crates/lsp" }
+phrost-model = { path = "crates/model" }
+phrost-stubs = { path = "crates/stubs" }
+phrost-syntax = { path = "crates/syntax" }
+phrost-syntax-features = { path = "crates/syntax-features" }
+phrost-ty = { path = "crates/ty" }
+phrost-twig = { path = "crates/twig" }
+phrost-vfs = { path = "crates/vfs" }
+phrost-testkit = { path = "crates/lib/testkit" }
+
+# lspkit -- what a language server needs that is not about PHP, shared with orthra. Pinned to a
+# revision, for the reason mago is pinned below: a build here never changes because that repository
+# moved. Bump every lspkit crate to the same `rev` in one commit, with this repository's gate run:
+# `just bump` in ../lspkit does exactly that.
+lspkit-arch = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-arena = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-fixture = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-flow = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-fuzz = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-heap = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-memsize = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-perf = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-ratchet = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-runtime = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-text = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-walk = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+
+# mago -- the PHP parser. Pinned exactly: 1.26 -> 1.45 moved `ast` to `cst` and made the tree
+# arena-bound, so a floating minor is a rewrite waiting to happen. Cargo.lock is committed too.
+# Bump every mago crate to the same version in one go; they ship as a set and share types across
+# the seam, so a graph left half-upgraded resolves to whatever semver happens to allow.
+mago-allocator = "=1.58.2"
+mago-database = "=1.58.2"
+mago-formatter = "=1.58.2"
+mago-linter = { version = "=1.58.2", features = ["serde"] }
+mago-names = "=1.58.2"
+mago-php-version = "=1.58.2"
+mago-phpdoc-syntax = "=1.58.2"
+mago-reporting = "=1.58.2"
+mago-span = "=1.58.2"
+mago-syntax = "=1.58.2"
+# The lexer's `Input`, which `mago-syntax` uses but does not re-export.
+mago-syntax-core = "=1.58.2"
+
+# Third-party
+blake3 = "1.8.5"
+clap = { version = "4", features = ["derive"] }
+dirs = "6"
+expect-test = "1.5.1"
+ignore = "0.4.26"
+rustc-hash = "2.1.2"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+tempfile = "3.27.0"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "io-std"] }
+text-size = "1.1.0"
+toml = "0.9"
+
+# Stated rather than left to the default, because something depends on it. The server contains a
+# panic in a handler and answers the request with an error instead of dying (`lspkit-runtime`'s
+# `panics`, which `phrost-lsp` wraps the server in), and `panic = "abort"` would remove that
+# silently: the code still compiles, the tests still pass, and the first bug in a handler takes the
+# editor's language server down again.
+[profile.release]
+panic = "unwind"
+
+[profile.dev]
+panic = "unwind"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unreachable_pub = "warn"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"

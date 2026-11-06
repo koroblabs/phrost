@@ -1,0 +1,52 @@
+[licenses]
+# Permissive only. mago is MIT OR Apache-2.0, which is what makes it usable here at all.
+allow = [
+    "MIT",
+    # MIT without the attribution clause -- strictly more permissive than MIT.
+    # `borrow-or-share`, via fluent-uri <- ls-types <- lspkit-runtime.
+    "MIT-0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    # A public-domain dedication: no notice, no attribution, no distribution obligation.
+    # `notify`, via mago-database.
+    "CC0-1.0",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+]
+
+# The one crate that is not permissive, named rather than allowed generally.
+#
+# MPL-2.0 is file-level weak copyleft: shipping it unmodified inside a binary asks only that the
+# crate's own source stay available, and it says nothing about the code that links it. So the
+# obligation is real but bounded, and worth writing down rather than hiding behind a blanket
+# allowance -- an exception here is a decision somebody can find and reverse.
+#
+# It is also the only one on this list that is ours to remove: `option-ext` arrives through
+# `dirs`, which this project calls in exactly two places, both `dirs::cache_dir()`. Dropping that
+# dependency would make the bill permissive-only again. Not done, because it is a change to the
+# crate graph and belongs in a commit of its own.
+[[licenses.exceptions]]
+name = "option-ext"
+allow = ["MPL-2.0"]
+
+[bans]
+# Duplicate versions of a dependency are a memory and compile-time cost, and this project's whole
+# premise is being cheap. Warn rather than deny so a transitive duplicate does not block work.
+multiple-versions = "warn"
+
+[advisories]
+yanked = "deny"
+# `paste`, reached through mago-syntax. Archived by its author, with no vulnerability -- the
+# advisory is about maintenance, and the crate is a proc-macro that expands at compile time and
+# ships no code. Nothing here can act on it: the dependency is mago's to replace, and mago is
+# pinned with `=` deliberately. Re-check when mago moves.
+ignore = ["RUSTSEC-2024-0436"]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+# lspkit, the base shared with orthra, pinned by `rev` in the workspace manifest.
+allow-git = ["https://github.com/koroblabs/lspkit.git"]

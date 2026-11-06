@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+# Rust is installed by a step, not taken from the runner and not taken from a `container:`.
+#
+# Both of the obvious answers fail somewhere. GitHub's `ubuntu-latest` ships Rust and a Gitea or
+# `act` runner image does not, so trusting the runner gives `cargo: command not found`. Naming
+# `container: rust:1.97.1` fixes that and breaks the other end: `actions/checkout` is a JavaScript
+# action, GitHub injects a Node binary into a job container and other runners do not, so it becomes
+# `exec: "node": executable file not found`.
+#
+# Installing rustup leaves the actions running on the runner's own image, where their Node is, and
+# takes the compiler from `rust-toolchain.toml` -- so the version is pinned in one place rather than
+# two, and there is nothing to keep in step.
+#
+# `--profile minimal` leaves out rust-docs, tens of thousands of small files that nothing here reads:
+# with four jobs installing at once it was most of the 40-54 s each spent in rustup. And the
+# toolchain is installed by `rustup toolchain install`, which reads `rust-toolchain.toml` -- not by
+# `rustup show`, whose installing a missing toolchain rustup has deprecated.
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: install the pinned toolchain
+        run: |
+          command -v rustup >/dev/null || curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain none --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      # Same prettier version as `just lint`. Node is already on the runner for `actions/checkout`.
+      - run: npx --yes prettier@3.8.0 --check "**/*.md"
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: install the pinned toolchain
+        run: |
+          command -v rustup >/dev/null || curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain none --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C "$HOME/.cargo/bin"
+      - run: cargo nextest run --workspace
+
+  # The architecture's boundaries are the dependency graph, so they get their own job: a failure
+  # here should read as "the layering was violated", not as one test among hundreds.
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: install the pinned toolchain
+        run: |
+          command -v rustup >/dev/null || curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain none --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p phrost-checks
+
+  # Installed rather than taken from `EmbarkStudios/cargo-deny-action`, which is a Docker action:
+  # running one inside a container is where a self-hosted runner is most likely to fail, and this
+  # job is the one whose failure should be about licenses rather than about the runner.
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: install the pinned toolchain
+        run: |
+          command -v rustup >/dev/null || curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain none --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      # The release binary, checked against the digest pinned here, rather than `cargo install`:
+      # compiling cargo-deny took 81 s of this job whenever the cache was cold, and the runner drops
+      # a cache nobody has used for a week.
+      - name: install cargo-deny
+        run: |
+          version=0.20.2
+          sha256=9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f
+          name="cargo-deny-$version-x86_64-unknown-linux-musl"
+          curl --proto "=https" --tlsv1.2 -sSfL -o "$RUNNER_TEMP/cargo-deny.tar.gz" \
+            "https://github.com/EmbarkStudios/cargo-deny/releases/download/$version/$name.tar.gz"
+          echo "$sha256  $RUNNER_TEMP/cargo-deny.tar.gz" | sha256sum -c -
+          tar xzf "$RUNNER_TEMP/cargo-deny.tar.gz" -C "$HOME/.cargo/bin" --strip-components=1 "$name/cargo-deny"
+          cargo deny --version
+      # Split, because the two halves fail for different reasons and only one of them needs the
+      # network. Bans, licenses and sources are decided entirely by `Cargo.lock` and `deny.toml`, so
+      # they need no network beyond fetching lspkit -- and they are what this job is for.
+      - run: cargo deny check bans licenses sources
+      # The advisory database is a git clone cargo-deny makes itself, and on a runner where an
+      # anonymous GitHub clone is refused it fails with `could not read Username for
+      # 'https://github.com'` -- which reads as a broken lockfile and is a 401. `actions/checkout`
+      # above succeeds because it is handed a token; this hands the same one to git, scoped to this
+      # step through `GIT_CONFIG_*` rather than written into the runner's global config, because a
+      # self-hosted runner keeps whatever a job leaves in `~/.gitconfig`.
+      - name: check advisories
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: url.https://x-access-token:${{ github.token }}@github.com/.insteadOf
+          GIT_CONFIG_VALUE_0: https://github.com/
+        run: cargo deny check advisories

@@ -1,0 +1,18 @@
+{
+  "php": {
+    "command": "phrost",
+    "args": ["serve"],
+    "extensionToLanguage": {
+      ".php": "php",
+      ".module": "php",
+      ".inc": "php",
+      ".install": "php",
+      ".theme": "php",
+      ".profile": "php",
+      ".engine": "php"
+    },
+    "workspaceFolder": "${CLAUDE_PROJECT_DIR}",
+    "diagnostics": true,
+    "startupTimeout": 30000
+  }
+}

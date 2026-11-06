@@ -1,0 +1,15 @@
+[package]
+name = "phrost-twig"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Twig templates, read far enough to say what they name."
+
+[dependencies]
+
+[dev-dependencies]
+expect-test.workspace = true
+
+[lints]
+workspace = true

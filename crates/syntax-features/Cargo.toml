@@ -1,0 +1,29 @@
+[package]
+name = "phrost-syntax-features"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Features that read tokens and trivia instead of the index."
+
+[dependencies]
+mago-allocator.workspace = true
+mago-database.workspace = true
+mago-formatter.workspace = true
+mago-linter.workspace = true
+serde_json.workspace = true
+mago-names.workspace = true
+mago-reporting.workspace = true
+mago-php-version.workspace = true
+mago-phpdoc-syntax.workspace = true
+mago-span.workspace = true
+mago-syntax.workspace = true
+mago-syntax-core.workspace = true
+phrost-model.workspace = true
+phrost-syntax.workspace = true
+
+[dev-dependencies]
+expect-test.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,15 @@
+[package]
+name = "phrost-hir"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Owned, syntax-shaped IR for one PHP file. The boundary above the parser."
+
+[dependencies]
+lspkit-arena.workspace = true
+phrost-intern.workspace = true
+phrost-model.workspace = true
+
+[lints]
+workspace = true

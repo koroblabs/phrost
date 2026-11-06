@@ -1,0 +1,8 @@
+/target
+/.claude
+.DS_Store
+/reference
+*.profraw
+/.phrost-cache
+THIRD-PARTY-LICENSES.md
+/dist

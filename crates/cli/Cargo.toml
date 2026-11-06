@@ -1,0 +1,43 @@
+[package]
+name = "phrost-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The phrost binary: the language server, and the tools for inspecting it."
+
+[[bin]]
+name = "phrost"
+path = "src/main.rs"
+
+[dependencies]
+toml.workspace = true
+clap.workspace = true
+lspkit-perf.workspace = true
+lspkit-ratchet.workspace = true
+lspkit-heap.workspace = true
+phrost-analysis.workspace = true
+phrost-framework.workspace = true
+phrost-index.workspace = true
+phrost-lsp.workspace = true
+phrost-model.workspace = true
+phrost-project.workspace = true
+phrost-stubs.workspace = true
+phrost-syntax-features.workspace = true
+phrost-vfs.workspace = true
+phrost-view.workspace = true
+tokio.workspace = true
+mimalloc = { version = "0.1.52", optional = true }
+
+[features]
+# The allocator for a target whose own neither returns memory nor can be asked to -- musl. Off by
+# default because on macOS it was measured worse than the system allocator: cold RSS 394 MB against
+# 270, and the footprint only fell after its purge delay.
+mimalloc = ["dep:mimalloc", "lspkit-heap/mimalloc"]
+
+[dev-dependencies]
+expect-test.workspace = true
+phrost-testkit.workspace = true
+
+[lints]
+workspace = true

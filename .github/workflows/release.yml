@@ -1,0 +1,125 @@
+name: Release
+
+# A tag `v<version>` builds phrost for every platform below, packs each with the licenses of
+# everything in it, and publishes them as a GitHub release whose notes are CHANGELOG.md's section for
+# that version. Run by hand (Actions → Release → Run workflow), it builds and packs the same archives
+# and publishes nothing: a dry run before tagging.
+#
+# The archive for a platform is `phrost-<target>.tar.gz`, holding `phrost-<target>/phrost`
+# (`tools/dist/pack.sh`).
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_ABOUT_VERSION: 0.9.3
+
+jobs:
+  # The tag, Cargo.toml and CHANGELOG.md agree before anything is built.
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: the tag is the version, and the changelog has it
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)
+          if [ "${GITHUB_REF_TYPE}" = tag ] && [ "${GITHUB_REF_NAME}" != "v$version" ]; then
+            echo "the tag is ${GITHUB_REF_NAME} and Cargo.toml says $version" >&2
+            exit 1
+          fi
+          if ! grep -Eq "^## $version( |\$)" CHANGELOG.md; then
+            echo "CHANGELOG.md has no section for $version" >&2
+            exit 1
+          fi
+
+  # The licenses of every crate linked into phrost, once, for every archive: cargo-about reads
+  # Cargo.lock and each crate's own license files, and `about.toml` says which are accepted.
+  licenses:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: install the pinned toolchain
+        run: |
+          command -v rustup >/dev/null || curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain none --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - run: rustup toolchain install
+      # Its binary is behind the `cli` feature: without it, `cargo install` succeeds and installs nothing.
+      - run: cargo install cargo-about --locked --features cli --version "$CARGO_ABOUT_VERSION"
+      - run: cargo about generate --locked --fail -c about.toml -m crates/cli/Cargo.toml -o THIRD-PARTY-LICENSES.md tools/dist/third-party-licenses.hbs
+      - uses: actions/upload-artifact@v7
+        with:
+          name: third-party-licenses
+          path: THIRD-PARTY-LICENSES.md
+
+  # No cache: a release is built from nothing but the commit.
+  build:
+    needs: licenses
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux on 22.04, so the binary needs glibc 2.35, not the newest runner's.
+          - { target: x86_64-unknown-linux-gnu, runner: ubuntu-22.04, runs: true }
+          - { target: aarch64-unknown-linux-gnu, runner: ubuntu-22.04-arm, runs: true }
+          - { target: aarch64-apple-darwin, runner: macos-15, runs: true }
+          # Built on Apple silicon for Intel, which the runner cannot run to smoke-test.
+          - { target: x86_64-apple-darwin, runner: macos-15, runs: false }
+    runs-on: ${{ matrix.runner }}
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: install the pinned toolchain
+        run: |
+          command -v rustup >/dev/null || curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain none --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - run: rustup toolchain install
+      - run: rustup target add "${{ matrix.target }}"
+      - run: cargo build --release --locked -p phrost-cli --target "${{ matrix.target }}"
+      - name: it runs
+        if: matrix.runs
+        run: sh tools/dist/smoke.sh "target/${{ matrix.target }}/release/phrost"
+      - uses: actions/download-artifact@v8
+        with:
+          name: third-party-licenses
+      - run: sh tools/dist/pack.sh "${{ matrix.target }}" "target/${{ matrix.target }}/release/phrost" THIRD-PARTY-LICENSES.md dist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: phrost-${{ matrix.target }}
+          path: dist/phrost-${{ matrix.target }}.tar.gz*
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: phrost-*
+          path: dist
+          merge-multiple: true
+      # A run started again after a failure finds the release made, and replaces its files.
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '/^## /{p = ($2 == v); next} p' CHANGELOG.md > notes.md
+          (cd dist && cat ./*.sha256 > SHA256SUMS)
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/*.tar.gz dist/SHA256SUMS --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "phrost $version" \
+              --notes-file notes.md dist/*.tar.gz dist/SHA256SUMS
+          fi

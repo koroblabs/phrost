@@ -1,0 +1,25 @@
+[package]
+name = "phrost-lower"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Parse tree to owned per-file IR. The only crate that knows the tree's shape."
+
+[dependencies]
+lspkit-arena.workspace = true
+mago-allocator.workspace = true
+mago-database.workspace = true
+mago-phpdoc-syntax.workspace = true
+mago-span.workspace = true
+mago-syntax.workspace = true
+phrost-hir.workspace = true
+phrost-model.workspace = true
+phrost-syntax.workspace = true
+
+[dev-dependencies]
+expect-test.workspace = true
+phrost-testkit.workspace = true
+
+[lints]
+workspace = true

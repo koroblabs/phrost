@@ -1,0 +1,17 @@
+# Third-party licenses
+
+phrost is built from the crates below, each license given once with the crates under it. The PHP
+standard-library stubs built into phrost have their licenses in `licenses/`, beside this file.
+
+{{#each licenses}}
+## {{{name}}}
+
+{{#each used_by}}
+- {{{crate.name}}} {{{crate.version}}}{{#if crate.repository}}, {{{crate.repository}}}{{/if}}
+{{/each}}
+
+```text
+{{{text}}}
+```
+
+{{/each}}
