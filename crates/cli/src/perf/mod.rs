@@ -91,6 +91,11 @@ pub(crate) fn run(
     let indexing_time = indexing_started.elapsed();
     let indexed = workspace.indexed_file_count();
 
+    // As the server does at the end of its bootstrap, so the figure describes the server and not
+    // the allocator's cache of what bootstrap freed. Read before the release, the footprint on the
+    // reference checkout stood at 181 MB without lspkit-heap's `override` and 177-179 with it, the
+    // whole difference hidden; read after it, 170 against 151-156.
+    lspkit_heap::release_freed();
     let rss_after_bootstrap = lspkit_perf::rss::current();
 
     println!("root                {}", root.display());
