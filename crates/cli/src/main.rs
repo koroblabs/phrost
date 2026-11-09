@@ -19,14 +19,9 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
-/// See the `mimalloc` feature in `Cargo.toml`, and `lspkit-heap` for who asks it to collect.
-#[cfg(feature = "mimalloc")]
-#[global_allocator]
-static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
-
 /// Large blocks from the operating system with a bounded cache, small ones to the system
-/// allocator: see `lspkit_heap::Heap`.
-#[cfg(not(feature = "mimalloc"))]
+/// allocator, which on macOS is mimalloc through lspkit-heap's `override` (see this crate's
+/// `Cargo.toml` for the measurement, and `lspkit_heap::Heap`).
 #[global_allocator]
 static GLOBAL: lspkit_heap::Heap = lspkit_heap::Heap;
 

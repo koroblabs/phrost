@@ -267,7 +267,18 @@ the budgets.
   check -- the `MallocLargeCache=0` ceiling (195, 235) with ready time unchanged, and
   `index --memory` reports 30.5 MB actually given back after indexing where macOS's own relief
   gave 0. The remedy that worked was the third one: not a better allocator, but not asking one to
-  keep what it was never going to give back.
+  keep what it was never going to give back. **And then the allocator after all, 2026-11-09**: the
+  394 MB that refuted mimalloc was `ps`'s RSS, which on macOS keeps counting pages an allocator has
+  given back with `MADV_FREE_REUSABLE` and so never falls; the footprint (Activity Monitor, the
+  `footprint` tool, what `lspkit_perf::rss` reads there since lspkit 0.1.1) is what the kernel
+  charges, and one process stood at 150 MB of RSS and 47 MB of footprint. Read that way, mimalloc v2
+  as the process's `malloc` under `Heap` (lspkit-heap's `override`, macOS only) takes the footprint
+  after bootstrap and `release_freed` on the reference checkout from 170 MB to 151-156, and with 20
+  files open from 178 to 164-170, request p95s unchanged, while `ps`'s RSS rises from 186 to 223 MB
+  in the same run. Two tells worth keeping: the perf sweep read its memory figure _before_ the
+  release the server does at the end of bootstrap, which hid the whole difference (181 against
+  177-179), and reads after it now; and Linux stays on glibc, which gives a C library's freed blocks
+  back by itself -- with mimalloc there orthra measured 4.5 MB more RSS per project.
 
 - **A leak in a language server is a list somebody appends to, and the first instrument found its
   own.** `tests::a_session_gives_its_memory_back` drives one thing a session does over and over -- a

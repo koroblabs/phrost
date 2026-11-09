@@ -418,7 +418,9 @@ should not have been.
   one unchanged tree while other work built: 246.5-253.8 MB, with the before and after bands of a
   change that stores nothing overlapping completely. An RSS delta under about 6 MB on a busy machine
   says nothing at all. `phrost index --memory` reports the index heap with a per-row breakdown and
-  is deterministic -- compare that, and use RSS only for an order-of-magnitude claim.
+  is deterministic -- compare that, and use RSS only for an order-of-magnitude claim. On macOS the
+  figure is the footprint since lspkit 0.1.1, read after the bootstrap's `release_freed`; `ps`'s RSS
+  there counts pages already given back and never falls.
 
 - **The perf sweep's `diagnostics` row is a knife-edge, and §3's warning understates it.** The same
   binary measured 41.32 ms, 29.39 ms and 23.42 ms against a 30 ms budget in three runs minutes

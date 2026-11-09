@@ -27,13 +27,14 @@ phrost-syntax-features.workspace = true
 phrost-vfs.workspace = true
 phrost-view.workspace = true
 tokio.workspace = true
-mimalloc = { version = "0.1.52", optional = true }
 
-[features]
-# The allocator for a target whose own neither returns memory nor can be asked to -- musl. Off by
-# default because on macOS it was measured worse than the system allocator: cold RSS 394 MB against
-# 270, and the footprint only fell after its purge delay.
-mimalloc = ["dep:mimalloc", "lspkit-heap/mimalloc"]
+# `override` puts mimalloc v2 under `Heap` and under every C library in the binary (tree-sitter), so
+# `release_freed` gives back what they freed too. macOS only: there nothing else asks the system
+# allocator for them, and on the 29 094-file reference checkout the footprint after bootstrap went
+# from 170 MB to 151-156 (docs/08-performance.md). On Linux glibc gives them back by itself, and orthra
+# measured mimalloc's own reserve at 4.5 MB more RSS per project, so Linux stays on glibc.
+[target.'cfg(target_os = "macos")'.dependencies]
+lspkit-heap = { workspace = true, features = ["override"] }
 
 [dev-dependencies]
 expect-test.workspace = true

@@ -3,6 +3,16 @@
 A release's section is its notes on GitHub: the release workflow publishes the section whose heading
 names the tag's version.
 
+## Unreleased
+
+- Less memory on macOS: mimalloc is the process's allocator under `lspkit_heap::Heap`, so what the
+  parser frees leaves the process. On a 29 094-file Drupal checkout the server after bootstrap went
+  from 170 MB to 151-156 MB, and with 20 files open from 178 MB to 164-170 MB, with request
+  latencies unchanged. Linux keeps glibc.
+- `phrost perf` reads its memory figure after the release the server does at the end of bootstrap,
+  and on macOS reports the footprint, which is what the machine gives up, rather than `ps`'s
+  resident set, which never falls there.
+
 ## 0.1.0
 
 The first release.
