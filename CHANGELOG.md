@@ -3,7 +3,7 @@
 A release's section is its notes on GitHub: the release workflow publishes the section whose heading
 names the tag's version.
 
-## Unreleased
+## 0.1.1
 
 - Less memory on macOS: mimalloc is the process's allocator under `lspkit_heap::Heap`, so what the
   parser frees leaves the process. On a 29 094-file Drupal checkout the server after bootstrap went
