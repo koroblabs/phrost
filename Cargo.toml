@@ -66,18 +66,18 @@ phrost-testkit = { path = "crates/lib/testkit" }
 # revision, for the reason mago is pinned below: a build here never changes because that repository
 # moved. Bump every lspkit crate to the same `rev` in one commit, with this repository's gate run:
 # `just bump` in ../lspkit does exactly that.
-lspkit-arch = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
-lspkit-arena = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
-lspkit-fixture = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
-lspkit-flow = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
-lspkit-fuzz = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
-lspkit-heap = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
-lspkit-memsize = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
-lspkit-perf = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
-lspkit-ratchet = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
-lspkit-runtime = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
-lspkit-text = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
-lspkit-walk = { git = "https://github.com/koroblabs/lspkit.git", rev = "3a459fca59123c837185428da51665ffb023ca35" }
+lspkit-arch = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
+lspkit-arena = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
+lspkit-fixture = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
+lspkit-flow = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
+lspkit-fuzz = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
+lspkit-heap = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
+lspkit-memsize = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
+lspkit-perf = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
+lspkit-ratchet = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
+lspkit-runtime = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
+lspkit-text = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
+lspkit-walk = { git = "https://github.com/koroblabs/lspkit.git", rev = "4e8e5b30cb6f4c3857a8eaab2159fc5c466777df" }
 
 # mago -- the PHP parser. Pinned exactly: 1.26 -> 1.45 moved `ast` to `cst` and made the tree
 # arena-bound, so a floating minor is a rewrite waiting to happen. Cargo.lock is committed too.
