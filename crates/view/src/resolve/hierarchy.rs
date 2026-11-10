@@ -61,6 +61,19 @@ impl IndexView<'_> {
         widest
     }
 
+    /// Whether the code at `offset` runs as `class_fqn` or as a class that descends from it.
+    ///
+    /// Where it does, the class's own name before `::` is `self` or `parent` spelled out, and an
+    /// instance method called through it is called on `$this`: `Base::__construct($id)` in a
+    /// subclass, `PclZip::privErrorLog(...)` sixty times in the class WordPress ships. Anywhere
+    /// else the same line is a static call to a method that is not static, which PHP 8 refuses.
+    pub fn runs_within(&self, offset: TextSize, class_fqn: &str) -> bool {
+        self.scopes_at(offset).iter().any(|here| {
+            here.as_str().eq_ignore_ascii_case(class_fqn)
+                || self.descends_from(here.as_str(), class_fqn, HIERARCHY_DEPTH)
+        })
+    }
+
     /// [`Self::visible_from`] for code written in `here`.
     fn visible_from_class(&self, here: &str, class_fqn: &str) -> phrost_model::Visibility {
         use phrost_model::Visibility;

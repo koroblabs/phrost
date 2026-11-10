@@ -31,6 +31,9 @@ names the tag's version.
   under a class's `@template TValue` offered every class that began that way and not `TValue`.
 - A type in a docblock goes on past the space after a callable's colon and the spaces some write
   round a `|`: `@param callable(TValue, TKey): TMap` and `@return string | Tra` offered nothing.
+- The enclosing class's own name before `::`, or an ancestor's, offers instance methods as `self::`
+  and `parent::` do: `Base::__construct($id)` in a subclass, `PclZip::privErrorLog(...)` inside
+  `PclZip`. Only static members and constants were offered.
 - A class is not imported a second time under a name a `use` line already holds. Where the file's
   own import named a class the project cannot see -- a dependency that is not installed -- accepting
   a namesake added a second `use` for the same name, which PHP refuses to load. It is written with

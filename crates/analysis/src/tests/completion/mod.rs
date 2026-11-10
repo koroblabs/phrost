@@ -29,6 +29,7 @@ mod qualified_functions;
 mod receivers;
 mod static_forwarding;
 mod tabled_properties;
+mod the_enclosing_class_by_name;
 mod the_other_two_uses;
 mod type_positions;
 mod use_paths;

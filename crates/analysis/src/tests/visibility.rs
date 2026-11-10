@@ -234,7 +234,10 @@ fn a_constructor_stays_when_it_is_reached_relatively() {
     );
 }
 
-/// The same through a class name, where only the static ones are reachable at all.
+/// The same through the class's own name, written inside it -- which is `self` spelled out, so
+/// every method is reachable and the magic ones are still last. Through the name of a class the
+/// code does not run as, only the static ones are reachable at all: see
+/// `completion::the_enclosing_class_by_name`.
 #[test]
 fn a_magic_method_reached_statically_is_offered_last_too() {
     check(
@@ -242,9 +245,17 @@ fn a_magic_method_reached_statically_is_offered_last_too() {
         &[Query::completion("through the class name", "here")],
         expect![[r#"
             through the class name
+            - __call [method]  : mixed  shown last  writes `(|);`
             - __callStatic [method]  : mixed  shown last  writes `(|);`
+            - __clone [method]  : void  shown last  writes `();`
+            - __construct [method]  shown last  writes `(|);`
+            - __get [method]  : mixed  shown last  writes `(|);`
+            - __set [method]  : void  shown last  writes `(|);`
+            - __toString [method]  : string  shown last  writes `();`
+            - build [method]  : void  writes `();`
+            - find [method]  : void  writes `();`
             - class [const]  App\Repo
-            - accepting the first leaves `Repo::class`
+            - accepting the first leaves `Repo::build`
         "#]],
     );
 }

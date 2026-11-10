@@ -63,6 +63,18 @@ pub(super) fn members(
         };
     }
     let classes = reached.classes();
+    // Whether what is before the operator stands for the object the code runs as: `$this`,
+    // `self`, `parent` -- and the name of the enclosing class or of one it descends from, which is
+    // the last two spelled out. See `IndexView::runs_within`.
+    let relative = match &receiver.root {
+        ReceiverRoot::This | ReceiverRoot::SelfClass | ReceiverRoot::Parent => true,
+        ReceiverRoot::Class(_) if matches!(access, Access::Static) && receiver.steps.is_empty() => {
+            classes
+                .iter()
+                .any(|class| view.runs_within(offset, class.as_str()))
+        }
+        _ => false,
+    };
 
     // Visibility is decided per class, because PHP decides it by comparing classes rather than by
     // looking at the receiver: inside `Repo`, `$sibling->own` compiles and `$this->` is not special.
@@ -170,7 +182,7 @@ pub(super) fn members(
                 reached.member.kind,
                 reached.member.is_static || forwarded_statically,
                 access,
-                &receiver.root,
+                relative,
             )
         })
         .filter(|reached| matches_loosely(reached.member.name.as_str(), typed))
@@ -187,7 +199,7 @@ pub(super) fn members(
                     member.name.as_str(),
                     member.is_static,
                     access,
-                    &receiver.root,
+                    relative,
                 ),
                 // A static property is the one member PHP writes with a sigil, and `Foo::foo` is not
                 // how it is reached. Through `::` an instance property is unreachable and is already
@@ -609,20 +621,10 @@ fn detail_of(kind: MemberKind, ty: Option<&str>) -> Option<String> {
 /// judgement: `$this->create(...)` on a static factory is written by hand six times in one real
 /// project and five in Drupal core, so on a receiver naming the enclosing class it is an ordinary
 /// member and belongs among them.
-fn demoted(
-    kind: MemberKind,
-    name: &str,
-    is_static: bool,
-    access: Access,
-    root: &ReceiverRoot,
-) -> bool {
+fn demoted(kind: MemberKind, name: &str, is_static: bool, access: Access, relative: bool) -> bool {
     if kind != MemberKind::Method {
         return false;
     }
-    let relative = matches!(
-        root,
-        ReceiverRoot::This | ReceiverRoot::SelfClass | ReceiverRoot::Parent
-    );
     name.starts_with("__") || (is_static && matches!(access, Access::Instance) && !relative)
 }
 
@@ -641,13 +643,10 @@ fn demoted(
 ///
 /// Through `::`, an instance method is the mirror image: `parent::__construct()` and
 /// `self::helper()` are ordinary PHP, and `Unrelated::instanceMethod()` is a fatal error since PHP
-/// 8.0. So that one is allowed for a relative receiver and refused for a named class.
-fn reachable(kind: MemberKind, is_static: bool, access: Access, root: &ReceiverRoot) -> bool {
-    let relative = matches!(
-        root,
-        ReceiverRoot::This | ReceiverRoot::SelfClass | ReceiverRoot::Parent
-    );
-
+/// 8.0. So that one is allowed for a relative receiver and refused for a named class -- unless the
+/// name is the enclosing class's own or an ancestor's, which is `self` or `parent` written out and
+/// arrives here as `relative`.
+fn reachable(kind: MemberKind, is_static: bool, access: Access, relative: bool) -> bool {
     match access {
         Access::Instance => match kind {
             MemberKind::Method => true,
