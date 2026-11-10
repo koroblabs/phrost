@@ -208,12 +208,19 @@ impl Sweep {
     /// source is code that demonstrably runs, so a strict check that lights it up is describing
     /// itself and not the code -- and that number cannot be got from user files, where a finding may
     /// well be a real bug.
+    ///
+    /// What the project owns is the server's answer and not only the package manager's: a
+    /// framework keeps code that is not the project's outside `vendor/` -- Drupal's core and its
+    /// contributed modules -- and the server checks none of it. Where that code is committed
+    /// beside the project's, which is how many Drupal sites are deployed, discovery calls it the
+    /// user's, and a sweep that asked nothing more reported 57 116 findings on Drupal core's own
+    /// checkout where the editor reported them for forty-two files.
     pub(crate) fn files(&self, include: Option<&str>) -> Vec<PathBuf> {
         let mut files = self
             .discovered
             .iter()
             .filter(|(path, origin)| match origin {
-                SourceOrigin::User => true,
+                SourceOrigin::User if self.workspace.owns_path(path) => true,
                 _ => include.is_some_and(|wanted| path.to_string_lossy().contains(wanted)),
             })
             .map(|(path, _)| path.clone())
@@ -451,7 +458,7 @@ fn deep_thread() -> std::thread::Builder {
 mod tests {
     use phrost_testkit::MaterializedFixture;
 
-    use super::{Start, Sweep};
+    use super::{Start, Sweep, display};
 
     /// Two classes declaring one method name, and only one of them called.
     ///
@@ -491,6 +498,73 @@ class Page
     }
 }
 "#;
+
+    /// A Drupal site with its core and a contributed module committed beside its own module:
+    /// nothing ignores them, so discovery reads all three as the project's.
+    const CORE_COMMITTED: &str = r#"
+//- /composer.json
+{}
+
+//- /web/core/lib/Drupal.php
+<?php
+class Drupal {}
+
+//- /web/core/lib/Drupal/Core/Thing.php
+<?php
+namespace Drupal\Core;
+
+class Thing {}
+
+//- /web/modules/contrib/extra/extra.info.yml
+name: Extra
+
+//- /web/modules/contrib/extra/src/Helper.php
+<?php
+namespace Drupal\extra;
+
+class Helper {}
+
+//- /web/modules/custom/mine/mine.info.yml
+name: Mine
+
+//- /web/modules/custom/mine/src/Manager.php
+<?php
+namespace Drupal\mine;
+
+class Manager {}
+"#;
+
+    /// The sweep covers what the server would check and no more: the framework's own code is
+    /// read, and is not the project's to be told about.
+    #[test]
+    fn code_a_framework_keeps_outside_vendor_is_not_swept() {
+        let fixture = MaterializedFixture::parse(CORE_COMMITTED);
+        let sweep =
+            Sweep::indexed_watching(fixture.root().to_path_buf(), Start::Cold, &mut |_, _| {})
+                .expect("the fixture indexes");
+
+        let swept = sweep
+            .files(None)
+            .iter()
+            .map(|path| display(fixture.root(), path))
+            .collect::<Vec<_>>();
+        assert_eq!(swept, vec!["web/modules/custom/mine/src/Manager.php"]);
+
+        // Asked for by name, it is still reachable: the checker measured against a framework.
+        let with_core = sweep
+            .files(Some("web/core"))
+            .iter()
+            .map(|path| display(fixture.root(), path))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            with_core,
+            vec![
+                "web/core/lib/Drupal/Core/Thing.php",
+                "web/core/lib/Drupal.php",
+                "web/modules/custom/mine/src/Manager.php",
+            ]
+        );
+    }
 
     #[test]
     fn gathering_first_is_what_makes_the_checker_answer_the_exact_rule() {

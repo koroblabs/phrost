@@ -37,6 +37,10 @@ names the tag's version.
 - Renaming a property or a method also renames the `@property` or `@method` tag that documents it on
   the same class, and find-references lists the tag. `@property-read string $scheme` above a
   declared `protected $scheme` was left naming the old property.
+- `phrost check` no longer reports on code a framework keeps outside `vendor/` when it is committed
+  beside the project's own -- Drupal's core and contributed modules in a site that commits them. The
+  editor never checked them and the command line did, so CI and the editor disagreed by tens of
+  thousands of findings on such a checkout.
 - A class is not imported a second time under a name a `use` line already holds. Where the file's
   own import named a class the project cannot see -- a dependency that is not installed -- accepting
   a namesake added a second `use` for the same name, which PHP refuses to load. It is written with
