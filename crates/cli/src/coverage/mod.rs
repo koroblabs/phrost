@@ -68,7 +68,8 @@ pub(crate) fn run(
 
     let mut user_files = discovered
         .iter()
-        .filter(|(_, origin)| matches!(origin, SourceOrigin::User))
+        // The project's own by the server's rule, which is the sweep's too: see `Sweep::files`.
+        .filter(|(path, origin)| matches!(origin, SourceOrigin::User) && workspace.owns_path(path))
         .map(|(path, _)| path.clone())
         .collect::<Vec<_>>();
     user_files.sort();

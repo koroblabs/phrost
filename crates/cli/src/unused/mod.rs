@@ -112,7 +112,8 @@ pub(crate) fn run(root: Option<PathBuf>, limit: Option<usize>) -> Result<(), Str
     let mut own: Vec<PathBuf> = found
         .php
         .iter()
-        .filter(|(_, origin)| matches!(origin, SourceOrigin::User))
+        // The project's own by the server's rule, which is the sweep's too: see `Sweep::files`.
+        .filter(|(path, origin)| matches!(origin, SourceOrigin::User) && workspace.owns_path(path))
         .map(|(path, _)| path.clone())
         .collect();
     own.sort();
