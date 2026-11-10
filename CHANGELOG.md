@@ -27,6 +27,10 @@ names the tag's version.
   `use` line for that class -- which is Drupal's and Laravel's convention and nobody else's. A file
   whose docblocks name classes as its code does now gets the name its code would write, and a file
   that writes them from the root, or has named none yet, is completed as before.
+- A docblock's type position offers the template parameters and type aliases in scope: `@return TVa`
+  under a class's `@template TValue` offered every class that began that way and not `TValue`.
+- A type in a docblock goes on past the space after a callable's colon and the spaces some write
+  round a `|`: `@param callable(TValue, TKey): TMap` and `@return string | Tra` offered nothing.
 - A class is not imported a second time under a name a `use` line already holds. Where the file's
   own import named a class the project cannot see -- a dependency that is not installed -- accepting
   a namesake added a second `use` for the same name, which PHP refuses to load. It is written with

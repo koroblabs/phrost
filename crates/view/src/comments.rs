@@ -209,14 +209,30 @@ fn inside_brackets(rest: &str) -> bool {
 /// A space ends the type only outside brackets: `array<string, Transport` is one type with a space
 /// in it, and counting words read the cursor as past the type -- every generic with a key, which is
 /// every map, offered nothing for its value.
+///
+/// Nor does a space the type goes on past: the one after the colon of a callable's return,
+/// `callable(TValue, TKey): TMapValue`, and the ones some projects write round a `|` or an `&`.
+/// Every callback parameter Laravel's collections document is written the first way, and its
+/// return type offered nothing.
 fn still_in_the_first_type(rest: &str) -> bool {
     let rest = rest.trim_start();
     let mut depth = 0_u32;
-    for character in rest.chars() {
+    for (at, character) in rest.char_indices() {
         match character {
             '<' | '{' | '(' | '[' => depth += 1,
             '>' | '}' | ')' | ']' => depth = depth.saturating_sub(1),
-            _ if character.is_whitespace() && depth == 0 => return false,
+            _ if character.is_whitespace() && depth == 0 => {
+                let before = rest[..at].trim_end();
+                let after = rest[at..].trim_start();
+                // `&$name` is a parameter taken by reference, which is past the type.
+                let goes_on = before.ends_with("):")
+                    || before.ends_with(['|', '&'])
+                    || after.starts_with('|')
+                    || (after.starts_with('&') && !after.starts_with("&$"));
+                if !goes_on {
+                    return false;
+                }
+            }
             _ => {}
         }
     }

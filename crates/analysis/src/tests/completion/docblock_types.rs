@@ -174,6 +174,55 @@ function report(array $info): void {}
 /// `@template TModel of \Illuminate\Database\Eloquent\Model` writes the name first, so the space
 /// after it read as the end of the type and the bound offered nothing -- four sites in one Laravel
 /// package, where goto on the same word went to the class. Psalm writes `as` for `of`.
+/// A callable's return is written after a colon and a space, and a union sometimes with spaces
+/// round its bar: the type goes on past both. `callable(TValue, TKey): TMapValue` is how every
+/// callback Laravel's collections take is documented. A parameter taken by reference is where
+/// the type has ended, however it is spaced.
+#[test]
+fn a_space_the_type_goes_on_past() {
+    check_declared(
+        r#"
+//- /src/Returns.php
+<?php
+namespace App;
+
+/** @param callable(int): Transp@returns@ $make */
+function returns($make) {}
+
+//- /src/Either.php
+<?php
+namespace App;
+
+/** @param string | Transp@either@ $one */
+function either($one) {}
+
+//- /src/ByReference.php
+<?php
+namespace App;
+
+/** @param array &$Transp@reference@ */
+function by_reference(&$found) {}
+"#,
+        &[
+            Query::completion("a callable's return", "returns"),
+            Query::completion("after a spaced bar", "either"),
+            Query::completion("a parameter by reference", "reference"),
+        ],
+        expect![[r#"
+            a callable's return
+            - Transport [interface]  App\Transport  insert `\App\Transport`
+            - ... and the client must ask again
+            - accepting the first leaves `/** @param callable(int): \App\Transport $make */`
+            after a spaced bar
+            - Transport [interface]  App\Transport  insert `\App\Transport`
+            - ... and the client must ask again
+            - accepting the first leaves `/** @param string | \App\Transport $one */`
+            a parameter by reference
+            - (nothing offered)
+        "#]],
+    );
+}
+
 #[test]
 fn a_template_bound_after_of_or_as() {
     check_declared(
