@@ -42,10 +42,14 @@ pub(crate) enum CompletionContext {
     ///
     /// PHP's third `use`, and the one with no name in it at all: the file-level one takes a path,
     /// the one in a class body takes a trait, and this one takes variables. Apart from
-    /// [`Self::Variable`] because the `$` has not been typed yet -- it is the item that writes it --
-    /// and because `$this` is not capturable.
+    /// [`Self::Variable`] because the `$` need not have been typed yet -- the item writes it either
+    /// way -- and because `$this` is not capturable.
     Capture {
         prefix: String,
+        /// Whether the `$` of the name being typed is already there, which is how a person
+        /// usually gets here: `use ($al|`. The item writes one, so it has to replace the one that
+        /// was typed -- left out of the range, accepting `$alpha` wrote `use ($$alpha)`.
+        dollar: bool,
         /// The names the list already holds. Capturing one twice is a fatal error, so offering it
         /// is offering a mistake -- the same rule named-argument completion follows.
         already: Vec<String>,
@@ -1064,6 +1068,7 @@ impl CompletionContext {
         if let Some(already) = captured_so_far(before) {
             return Some(Self::Capture {
                 prefix: prefix.to_owned(),
+                dollar: before.ends_with('$'),
                 already,
             });
         }
@@ -1168,13 +1173,25 @@ impl CompletionContext {
     /// leaves `\App\Nested\App\Nested\Repo` in the file.
     pub(crate) fn replaced(&self, offset: TextSize) -> TextRange {
         let typed = TextSize::of(self.prefix());
-        // A sigil is written by the person and offered back as part of the label, so it is part of
-        // what gets replaced. Two things carry one: a local, and a static property.
-        let sigil = TextSize::from(u32::from(matches!(
-            self,
-            Self::Variable { .. } | Self::StaticMember { dollar: true, .. }
-        )));
+        let sigil = TextSize::from(u32::from(self.sigil_typed()));
         TextRange::new(offset - typed - sigil, offset)
+    }
+
+    /// Whether a `$` the person typed stands before the prefix.
+    ///
+    /// It is offered back as part of the label, so it is part of what gets replaced. Every context
+    /// by name rather than the ones that carry one: a capture list was not on the list of two this
+    /// used to be, and its `$` was typed and then written again.
+    fn sigil_typed(&self) -> bool {
+        match self {
+            Self::Variable { .. } => true,
+            Self::StaticMember { dollar, .. } | Self::Capture { dollar, .. } => *dollar,
+            Self::Member { .. }
+            | Self::Name { .. }
+            | Self::Import { .. }
+            | Self::Key { .. }
+            | Self::Callable { .. } => false,
+        }
     }
 
     /// How much of the name has already been typed.

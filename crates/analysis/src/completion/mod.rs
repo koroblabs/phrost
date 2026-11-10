@@ -494,9 +494,9 @@ pub fn completions(view: &IndexView<'_>, offset: TextSize) -> CompletionList {
         }
         // A closure's capture list, which takes a variable of the enclosing scope and nothing else
         // -- so the names that would otherwise fill a bare identifier position are all wrong here.
-        CompletionContext::Capture { prefix, already } => {
-            variables(view, offset, prefix, VariablePlace::Capture { already })
-        }
+        CompletionContext::Capture {
+            prefix, already, ..
+        } => variables(view, offset, prefix, VariablePlace::Capture { already }),
         // Names, plus the parameters of the call the cursor is inside. Both, because a bare
         // identifier at an argument position is genuinely ambiguous -- `Stage` and `stage:` are
         // both things a person types there -- and offering only one of the two hides the other.

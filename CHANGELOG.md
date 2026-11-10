@@ -5,6 +5,11 @@ names the tag's version.
 
 ## Unreleased
 
+- A variable completes again in Zed. `$ap` was answered with `$app` and the editor showed nothing:
+  the item was sent to be filtered without its `$`, and Zed counts the `$` as part of the word.
+  Every variable and static property was affected, in 0.1.0 through 0.1.2.
+- Accepting a variable in a closure's `use (...)` no longer doubles the `$`: `use ($al` became
+  `use ($$alpha)`.
 - `setrawcookie()` takes its options array: `setrawcookie($name, $value, ['expires' => $at])` was
   reported as an array given for an `int`, because the stubs declared the function's two forms
   separately and only the first was read.

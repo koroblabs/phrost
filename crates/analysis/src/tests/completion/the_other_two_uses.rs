@@ -126,3 +126,95 @@ class Report
         "#]],
     );
 }
+
+/// The way a person usually gets here: the `$` typed, then the name. The item writes a `$` of its
+/// own, so the one typed is part of what it replaces -- it used to be left standing, and accepting
+/// `$alpha` wrote `use ($$alpha)`.
+#[test]
+fn a_capture_whose_sigil_is_typed_is_not_given_a_second() {
+    check(
+        r#"
+//- /src/Report.php
+<?php
+namespace Ed;
+
+class Report
+{
+    public function run(string $alpha, int $beta): void
+    {
+        $write = function () use ($al@here@) {};
+    }
+}
+"#,
+        &[Query::completion("a capture half typed", "here")],
+        expect![[r#"
+            a capture half typed
+            - $alpha [variable]
+            - ... and the client must ask again
+            - accepting the first leaves `$write = function () use ($alpha) {};`
+        "#]],
+    );
+}
+
+/// The sigil and nothing after it, which is the state every one of these passes through.
+#[test]
+fn a_capture_that_is_only_its_sigil_is_replaced_whole() {
+    check(
+        r#"
+//- /src/Report.php
+<?php
+namespace Ed;
+
+class Report
+{
+    public function run(string $alpha): void
+    {
+        $write = function () use ($@here@) {};
+    }
+}
+"#,
+        &[Query::completion("a capture that is a sigil", "here")],
+        expect![[r#"
+            a capture that is a sigil
+            - $alpha [variable]
+            - $GLOBALS [variable]
+            - $_SERVER [variable]
+            - $_GET [variable]
+            - $_POST [variable]
+            - $_FILES [variable]
+            - $_COOKIE [variable]
+            - $_SESSION [variable]
+            - $_REQUEST [variable]
+            - $_ENV [variable]
+            - ... and the client must ask again
+            - accepting the first leaves `$write = function () use ($alpha) {};`
+        "#]],
+    );
+}
+
+/// By reference, where the `&` is the person's and stays.
+#[test]
+fn a_capture_by_reference_keeps_its_ampersand_and_one_sigil() {
+    check(
+        r#"
+//- /src/Report.php
+<?php
+namespace Ed;
+
+class Report
+{
+    public function run(string $alpha, int $beta): void
+    {
+        $write = function () use ($alpha, &$be@here@) {};
+    }
+}
+"#,
+        &[Query::completion("a capture by reference", "here")],
+        expect![[r#"
+            a capture by reference
+            - $beta [variable]
+            - ... and the client must ask again
+            - accepting the first leaves `$write = function () use ($alpha, &$beta) {};`
+        "#]],
+    );
+}
