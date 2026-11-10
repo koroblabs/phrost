@@ -3,7 +3,7 @@
 A release's section is its notes on GitHub: the release workflow publishes the section whose heading
 names the tag's version.
 
-## Unreleased
+## 0.1.2
 
 **The linter**
 
