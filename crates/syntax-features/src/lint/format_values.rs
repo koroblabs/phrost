@@ -23,7 +23,9 @@
 
 use mago_reporting::{AnnotationKind, Issue};
 use mago_span::{HasSpan, Span};
-use mago_syntax::cst::{Argument, FunctionCall, Node, Program};
+use mago_syntax::cst::{Argument, Node, Program};
+
+use super::descent::Descent;
 
 /// What stands after the format string in one reported call.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -50,7 +52,10 @@ impl FormatValues {
             .iter()
             .find(|annotation| annotation.kind == AnnotationKind::Secondary)?
             .span;
-        let call = Self::call_at(program, arguments)?;
+        let call = Descent::to(program, arguments, |node| match node {
+            Node::FunctionCall(call) if call.argument_list.span() == arguments => Some(call),
+            _ => None,
+        })?;
 
         // After the format and not after the first argument: `fprintf` takes a handle before it.
         let mut written = 0;
@@ -65,38 +70,6 @@ impl FormatValues {
             written += 1;
         }
         Some(Self::Written(written))
-    }
-
-    /// The function call whose argument list is exactly `arguments`.
-    ///
-    /// Only into nodes that hold the span, so this is a walk down one path of the tree rather than
-    /// over all of it: a lint runs on every keystroke of an open buffer, and a generated file may
-    /// hold this finding a thousand times. A worklist rather than recursion, for the same file.
-    ///
-    /// That leans on a parent's span covering its children's, which was checked rather than
-    /// assumed: of 151 936 function calls in Symfony and WordPress, found by walking everything,
-    /// this reached every one.
-    fn call_at<'arena>(
-        program: &'arena Program<'arena>,
-        arguments: Span,
-    ) -> Option<&'arena FunctionCall<'arena>> {
-        let mut pending = vec![Node::Program(program)];
-        while let Some(node) = pending.pop() {
-            if let Node::FunctionCall(call) = node
-                && call.argument_list.span() == arguments
-            {
-                return Some(call);
-            }
-            node.visit_children(|child| {
-                let span = child.span();
-                if span.start.offset <= arguments.start.offset
-                    && arguments.end.offset <= span.end.offset
-                {
-                    pending.push(child);
-                }
-            });
-        }
-        None
     }
 
     /// mago's sentence with `given` where it printed the number of values the format needs.

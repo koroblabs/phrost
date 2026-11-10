@@ -26,8 +26,11 @@ use std::borrow::Cow;
 
 use phrost_syntax::text_range;
 
+mod deprecation_notice;
+mod descent;
 mod format_values;
 
+use deprecation_notice::DeprecationNotice;
 use format_values::FormatValues;
 
 /// One thing a rule found.
@@ -562,6 +565,11 @@ pub fn lint(
             {
                 return None;
             }
+            if code == "no-error-control-operator"
+                && DeprecationNotice::is_silenced_at(program, span)
+            {
+                return None;
+            }
             // Asked of the tree only for the one rule that miscounts, which fires on almost no
             // file; see `format_values` for the two things it gets wrong.
             let values = (code == "no-missing-format-argument")
@@ -645,6 +653,10 @@ mod no_insecure_comparison_tests;
 #[cfg(test)]
 #[path = "lint/no_missing_format_argument.rs"]
 mod no_missing_format_argument_tests;
+
+#[cfg(test)]
+#[path = "lint/no_error_control_operator.rs"]
+mod no_error_control_operator_tests;
 
 #[cfg(test)]
 mod tests {
