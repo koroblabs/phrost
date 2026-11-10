@@ -875,6 +875,17 @@ green and prove nothing — three of them nearly shipped as coverage in a single
   phrost alone, and prints every engine's pass rate and phrost's failures with whether PHPStan and
   phpantom pass them -- a test both fail is usually a position, not a gap. First run 2026-10-11:
   86.3 %, between Mago (87.1) and Psalm (81.5), PHPStan at 93.6 and phpantom at 93.2.
+- A fourteenth, for "would an editor show it, and does accepting it write it":
+  `python3 tools/a-half-typed-name-is-shown-and-accepted.py <project> [--files 40] [--limit 600]`
+  cuts every name a file writes in half, sends the buffer that way and asks completion at the cut.
+  Three questions the code itself answers: whether the name is offered, whether a client keeps it --
+  by the _word_ at the cursor (Zed, whose PHP counts `$` in one) and by the text the edit _replaces_
+  (VS Code and what follows it) -- and whether applying the edit writes what was there. Every other
+  completion tool asks with the file whole and reads labels, so none could see a list the server
+  answered and the editor emptied: `$ap` sent as `filterText: "app"` hid every variable in Zed for
+  three releases. Its first runs also found `use ($al` accepted as `use ($$alpha)`, and the MongoDB
+  extension's `RuntimeException` offered ahead of the one the file imports. An in-process test
+  cannot see any of this -- what a client does with an answer is about the client.
 - A seventh, and the only one that cannot be argued with: **`php` itself is on this machine**
   (8.5.10). For any question about what the _language_ does -- what an error says, which write PHP
   refuses, whether a hook makes a property backed -- write four lines into the scratchpad and run

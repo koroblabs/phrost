@@ -86,6 +86,12 @@ impl Backend {
                     // fields -- and the format has to agree with the text, since a client told
                     // `SNIPPET` reads every `$` in it as syntax.
                     let (new_text, format) = written(&item, snippets);
+                    // Before the text is moved into the edit. A snippet is not what gets written
+                    // -- its `$` are syntax -- so only plain text can stand in for the label.
+                    let filter_text = head.filter_text(
+                        &item.label,
+                        (format != Some(InsertTextFormat::SNIPPET)).then_some(new_text.as_str()),
+                    );
                     CompletionItem {
                         kind: Some(completion_kind(item.kind)),
                         // What makes a client draw the row struck through. The list has to carry
@@ -126,7 +132,7 @@ impl Backend {
                             true => format!("~{}", item.label),
                             false => format!("{rank:05}"),
                         }),
-                        filter_text: head.filter_text(&item.label),
+                        filter_text,
                         label: item.label,
                         ..CompletionItem::default()
                     }

@@ -139,7 +139,7 @@ impl Backend {
                     // The order the list was built in, for where a client's scores tie -- the
                     // reason the PHP path gives.
                     sort_text: Some(format!("{rank:05}")),
-                    filter_text: head.filter_text(&item.name),
+                    filter_text: head.filter_text(&item.name, None),
                     label: item.name.to_string(),
                     detail: (!item.detail.is_empty()).then(|| item.detail.to_string()),
                     kind: Some(match item.kind {

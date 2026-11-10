@@ -11,6 +11,7 @@ mod a_configuration_buffer_is_checked;
 mod a_constructor_reached_by_new;
 mod a_handler_named_after_prose;
 mod a_livewire_template;
+mod a_name_written_from_the_root;
 mod a_test_the_runner_catches;
 mod a_twig_template;
 mod a_twig_variable;
