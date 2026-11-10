@@ -567,6 +567,12 @@ impl Workspace {
         }
     }
 
+    /// The oldest PHP the project says it runs on, for the syntax rules that are advice to write
+    /// something a version added.
+    pub fn php_floor(&self) -> Option<phrost_model::PhpVersion> {
+        self.php_floor
+    }
+
     pub fn autoload(&self) -> &AutoloadMap {
         &self.autoload
     }

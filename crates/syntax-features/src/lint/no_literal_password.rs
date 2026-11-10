@@ -17,6 +17,7 @@ fn security_findings(source: &str) -> Vec<LintIssue> {
         source,
         "src/Runner.php",
         &[],
+        None,
         LintSelection {
             categories: &[LintCategory::Security],
             ..Default::default()

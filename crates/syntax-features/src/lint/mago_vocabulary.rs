@@ -17,6 +17,7 @@ fn only_rule(source: &str, code: &str) -> Vec<LintIssue> {
         source,
         "src/Runner.php",
         &[],
+        None,
         LintSelection {
             on: &[code.to_owned()],
             ..Default::default()

@@ -796,6 +796,42 @@ stays; on Laravel the parentheses come back. The other 1.53 change, a broken log
 as a block with its parentheses on their own lines, adds no `phpcs` error under the Drupal standard
 on the six reference files it touches.
 
+## The linter was never told a PHP version either, and eleven rules were never built
+
+The formatter's fault above had a mirror. `lint()` built its settings from `Settings::default()`,
+whose `php_version` is **8.0**, and mago builds only the rules that version satisfies. So every rule
+that needs 8.1 or later did not exist: six of the seven deprecation rules --
+`explicit-nullable-param` and `no-underscore-class` (8.4), `deprecated-cast`,
+`deprecated-switch-semicolon` and `deprecated-shell-execute-string` (8.5),
+`no-void-reference-return` (8.2) -- and `sensitive-parameter`, `explicit-octal`,
+`prefer-array-spread`, `prefer-first-class-callable` and `prefer-timestamp-factory`. Nothing failed,
+and a `deprecation` category of one rule reads exactly like a project with nothing deprecated in it.
+
+What found it was the table of rules that _never_ fired over four frameworks' source: unused
+captures and dead stores are off by default and expected there, but a deprecation of `Foo $x = null`
+staying silent across WordPress is not a property of WordPress. Counting what fires ranks the noise;
+the list of what never does is where a dead rule is.
+
+One version cannot be handed over, because a version gate means two different things. **A
+deprecation is about the newest PHP** -- a project requiring `^8.1` says it runs on 8.5 too, and
+every fix these rules ask for runs on every 8.x -- so the deprecation category is never held to the
+floor. **Any other gated rule is advice to write something a version added**, which is only advice
+where the project's _oldest_ PHP has it, so those are held to composer's `require.php`, the floor
+the formatter already writes for. The linter is therefore built for `PHPVersion::LATEST` and
+`PhpFloor::admits` decides per rule which of the rest speak; a project that states no floor has
+nothing held back. A deprecation is also capped at a warning: three of those rules report an _error_
+for a line that runs on every PHP there is. Measured with the four factual categories: 18 implicitly
+nullable parameters appear in WordPress's bundled sodium library and nothing else moves on Symfony,
+Drupal or Laravel, at a serial `check` time inside the noise (Laravel 10.0-10.9 s against 10.2-10.6,
+Drupal 28.9-30.6 against 29.0-29.8).
+
+Bringing a rule to life that has never run is a second audit, not a formality. `sensitive-parameter`
+is in the security category the editor shows unasked, at error level, and is decided by a
+parameter's name: 450 findings on those four projects, and of fourteen read one was a password --
+the rest `TokenInterface $token`, a lexer's `parseToken(string $token)`, a workflow's
+`int $nbToken`. It is on the default-off list beside `no-assign-in-condition`, so the editor's
+default is what it was and the rule is one name away.
+
 ## mago 1.52.0 is taken: both things the 1.50 note asked for arrived
 
 The note above named what would change its answer, and both did. The Drupal pass now pulls a value

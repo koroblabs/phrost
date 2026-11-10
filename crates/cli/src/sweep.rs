@@ -70,6 +70,9 @@ pub(crate) struct Visit<'v, 'a> {
     pub(crate) text: &'v str,
     /// Framework ids, which decide which lint rules are right for this project.
     pub(crate) frameworks: &'v [&'static str],
+    /// The oldest PHP the project says it runs on, which decides which version-gated lint rules
+    /// speak -- the same floor the editor lints with, so the two report a file the same way.
+    pub(crate) php_floor: Option<phrost_model::PhpVersion>,
     /// Which rules the project switched off or on by name, whatever the categories are.
     pub(crate) named: (&'v [String], &'v [String]),
 }
@@ -240,6 +243,7 @@ impl Sweep {
                     display: &display,
                     text: &held,
                     frameworks: self.workspace.frameworks(),
+                    php_floor: self.workspace.php_floor(),
                     named: self.workspace.named_lint_rules(),
                 });
             }
@@ -339,6 +343,7 @@ impl Sweep {
                                         display: &display,
                                         text: &text,
                                         frameworks: workspace.frameworks(),
+                                        php_floor: workspace.php_floor(),
                                         named: workspace.named_lint_rules(),
                                     })
                                 },
@@ -415,6 +420,7 @@ impl Visit<'_, '_> {
             self.text,
             self.display,
             self.frameworks,
+            self.php_floor,
             phrost_syntax_features::lint::LintSelection {
                 categories,
                 off: self.named.0,

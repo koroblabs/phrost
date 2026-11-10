@@ -15,6 +15,7 @@ fn findings(source: &str) -> Vec<LintIssue> {
         source,
         "src/Runner.php",
         &[],
+        None,
         LintSelection {
             on: &["no-missing-format-argument".to_owned()],
             ..Default::default()

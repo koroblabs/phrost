@@ -11,6 +11,7 @@ fn findings(source: &str) -> Vec<LintIssue> {
         source,
         "src/Runner.php",
         &[],
+        None,
         LintSelection {
             on: &["no-error-control-operator".to_owned()],
             ..Default::default()

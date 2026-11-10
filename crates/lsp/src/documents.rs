@@ -292,6 +292,7 @@ fn lsp_diagnostics(
             text,
             &workspace.path_of(file).display().to_string(),
             workspace.frameworks(),
+            workspace.php_floor(),
             workspace.editor_lint(),
         ),
     }

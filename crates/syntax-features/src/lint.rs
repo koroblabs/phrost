@@ -21,7 +21,7 @@ use mago_names::resolver::NameResolver;
 use mago_reporting::{AnnotationKind, Issue, Level};
 use mago_span::{HasSpan, Span};
 use mago_syntax::cst::{Binary, Expression, ForeachTarget, Literal, Node, Program, Variable};
-use phrost_model::TextRange;
+use phrost_model::{PhpVersion, TextRange};
 use std::borrow::Cow;
 
 use phrost_syntax::text_range;
@@ -29,9 +29,11 @@ use phrost_syntax::text_range;
 mod deprecation_notice;
 mod descent;
 mod format_values;
+mod php_floor;
 
 use deprecation_notice::DeprecationNotice;
 use format_values::FormatValues;
+use php_floor::PhpFloor;
 
 /// One thing a rule found.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -160,6 +162,10 @@ pub enum LintSeverity {
 /// what it is called -- whether the class inside matches the name it is in -- and a placeholder makes
 /// every one of them fire. Measured: with a stand-in name, `file-name` alone reported 1586 findings on
 /// a 1662-file project, one per file.
+///
+/// `php` is the oldest PHP the project says it runs on -- composer's `require.php` -- or `None`
+/// where nothing says. It decides which rules gated on a version speak; see [`php_floor`] for why
+/// a deprecation is not one of them.
 /// Which rules a run reports, as one value.
 ///
 /// Category alone is not a good enough filter, and that is measured: with every category on, a real
@@ -190,6 +196,17 @@ const PREFERENCE_IN_A_FACTUAL_CATEGORY: &[&str] = &[
     // narrows through it, and then this told the author not to write it. 151 findings on one real
     // project, all of them that shape. A C-era typo hazard filed under correctness.
     "no-assign-in-condition",
+    // "Parameters that may contain sensitive information should be marked with the
+    // `#[SensitiveParameter]` attribute", at error level, decided by the parameter's *name*: any
+    // that ends in `token`, `password` or `secret`. 450 findings on four frameworks' own source,
+    // and of fourteen read, one was a password. The rest were `TokenInterface $token` six times
+    // over, `OidcLogoutToken $logoutToken`, a console lexer's `parseToken(string $token)`, a MIME
+    // header's `tokenNeedsEncoding(string $token)`, a profiler's `setToken(string $token)` and a
+    // workflow's `int $nbToken` -- how many tokens a Petri net's place holds. The attribute keeps a
+    // value out of a stack trace, which prints an object as its class name and has nothing to say
+    // about a count. It needs PHP 8.2, so until the linter was told which PHP it reads it never
+    // ran; this keeps that true of the editor's default and leaves the rule one name away.
+    "sensitive-parameter",
 ];
 
 impl LintSelection<'_> {
@@ -494,6 +511,7 @@ pub fn lint(
     text: &str,
     name: &str,
     integrations: &[&str],
+    php: Option<PhpVersion>,
     selection: LintSelection<'_>,
 ) -> Vec<LintIssue> {
     let arena = LocalArena::new();
@@ -504,7 +522,12 @@ pub fn lint(
     let program = mago_syntax::parser::parse_file(&arena, &file);
     let resolved = NameResolver::new(&arena).resolve(program);
 
-    let mut settings = Settings::default();
+    // Built for the newest PHP, so that every rule gated on a version exists to be asked; which of
+    // them speak to this project is the floor's to say, below.
+    let mut settings = Settings {
+        php_version: PhpFloor::NEWEST,
+        ..Settings::default()
+    };
     for name in integrations {
         if let Ok(integration) = name.parse::<Integration>() {
             settings.integrations.insert(integration);
@@ -521,6 +544,7 @@ pub fn lint(
     }
 
     let linter = Linter::new(&arena, &settings, None, false);
+    let floor = PhpFloor::of(php);
     // Which category each rule speaks for, asked of the linter rather than listed here: a list would
     // go stale silently, and a rule whose category this did not know would be filtered out of every
     // answer with nothing to say so.
@@ -530,9 +554,15 @@ pub fn lint(
         // By `code` and not by `name`: the code is what an issue carries and what a configuration
         // file switches off, while the name is the human one. Keying on the name silently matched
         // nothing, so every issue was filtered out and the project looked clean.
-        .map(|rule| {
+        //
+        // A rule the project's oldest PHP does not admit is left out, which is what drops its
+        // findings below: decided here, once per rule, rather than once per finding.
+        .filter_map(|rule| {
             let meta = rule.meta();
-            (meta.code, LintCategory::of(meta.category))
+            let category = LintCategory::of(meta.category);
+            floor
+                .admits(category, meta.requirements)
+                .then_some((meta.code, category))
         })
         .collect::<std::collections::HashMap<_, _>>();
 
@@ -587,6 +617,12 @@ pub fn lint(
                     _ => message,
                 },
                 severity: match issue.level {
+                    // A deprecation is a warning whatever level its rule gives it. The line runs,
+                    // on the PHP that deprecates it and on every one before, and PHP's own word
+                    // for it is `E_DEPRECATED` -- while three of mago's rules (a long cast, a
+                    // semicolon after a `case`, the backtick operator) call it an error, on a
+                    // project that may not be on the PHP 8.5 that minds.
+                    Level::Error if category == LintCategory::Deprecation => LintSeverity::Warning,
                     Level::Error => LintSeverity::Error,
                     Level::Warning => LintSeverity::Warning,
                     Level::Note | Level::Help => LintSeverity::Hint,
@@ -659,6 +695,10 @@ mod no_missing_format_argument_tests;
 mod no_error_control_operator_tests;
 
 #[cfg(test)]
+#[path = "lint/version_gated_rules.rs"]
+mod version_gated_rules_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -720,7 +760,7 @@ final class Service
     fn selected(text: &str, integrations: &[&str], selection: LintSelection<'_>) -> Vec<String> {
         // A name the file's own contents justify, so a rule about naming has nothing to say and the
         // test is about the rule it names.
-        let mut found = lint(text, "src/Runner.php", integrations, selection)
+        let mut found = lint(text, "src/Runner.php", integrations, None, selection)
             .into_iter()
             .map(|issue| issue.code)
             .collect::<Vec<_>>();
