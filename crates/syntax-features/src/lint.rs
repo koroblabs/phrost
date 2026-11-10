@@ -26,6 +26,10 @@ use std::borrow::Cow;
 
 use phrost_syntax::text_range;
 
+mod format_values;
+
+use format_values::FormatValues;
+
 /// One thing a rule found.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct LintIssue {
@@ -558,10 +562,22 @@ pub fn lint(
             {
                 return None;
             }
+            // Asked of the tree only for the one rule that miscounts, which fires on almost no
+            // file; see `format_values` for the two things it gets wrong.
+            let values = (code == "no-missing-format-argument")
+                .then(|| FormatValues::of(program, &issue, span))
+                .flatten();
+            if values == Some(FormatValues::Unpacked) {
+                return None;
+            }
+            let message = speaking_only_of_phrost(issue.message);
             Some(LintIssue {
                 range: text_range(span),
                 code: code.to_owned(),
-                message: speaking_only_of_phrost(issue.message),
+                message: match values {
+                    Some(FormatValues::Written(given)) => FormatValues::stated(message, given),
+                    _ => message,
+                },
                 severity: match issue.level {
                     Level::Error => LintSeverity::Error,
                     Level::Warning => LintSeverity::Warning,
@@ -625,6 +641,10 @@ mod mago_vocabulary_tests;
 #[cfg(test)]
 #[path = "lint/no_insecure_comparison.rs"]
 mod no_insecure_comparison_tests;
+
+#[cfg(test)]
+#[path = "lint/no_missing_format_argument.rs"]
+mod no_missing_format_argument_tests;
 
 #[cfg(test)]
 mod tests {
