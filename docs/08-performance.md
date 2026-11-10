@@ -727,9 +727,39 @@ diagnostics 308-415 -> 12.4-12.8 ms. No answer moved: every finding on Symfony, 
 and Laravel is the same line (124 027 of them), and `coverage --dump` is byte-identical on Laravel
 (243 550 lines) and WordPress (110 826). Serial `check` is inside the noise.
 
-Two things it leaves. A _named_ value handed to four hundred statement calls in one body is still
+One thing it leaves. A _named_ value handed to four hundred statement calls in one body is still
 read four hundred times over (100 ms on the same generated shape with a local), which is the same
-walk asked a fair question. And the sweep's two code-action rows stay over budget on that root for a
-different reason, already written down where it lives: every sort of subject is answered by walking
-the whole file (`actions/subject.rs`), and `source.fixAll` asks all of them about the whole file for
-every cursor -- 25 ms of `name_references` on a 3 317-line file of declarations.
+walk asked a fair question.
+
+## An import was offered out of the symbol picker, once per unresolved name
+
+The same sweep's two code-action rows stayed over budget after the note above: on the workspace VM
+p95 88-120 ms for a whole file and 55-123 ms at a cursor (29 and 17 ms on the Mac), all on
+`swoole.php`. Timing each offer named `source.fixAll`, 27 ms at every cursor, with `ImportClass`
+under it.
+
+The first reading was wrong and is worth keeping for that. `actions/subject.rs` says in its own
+header that every sort of subject is answered by walking the whole file, and the fix-all asks about
+the whole file for every cursor -- so the cost was read as `name_references` over 3 317 lines, and
+written down as that. A three-way cut of the file refuted it in one run: without its 28
+`class_alias(X::class, bare_name::class)` lines the same file answers in 4 ms, with them in 28. A
+cause that fits a comment already in the code is still a guess until something is taken out.
+
+What cost was `search_symbols`, asked once per unresolved bare name and then filtered to the classes
+of exactly that name: the picker's search, with its loose pass and its walk over every member the
+project declares, about 0.85 ms a time on that root and 4 ms on Laravel. §8.1's _catch-all answering
+a question its inputs could answer better_: the catalog is ordered by short name, so the classes of
+one name are one range of it. `IndexView::class_likes_named` reads that range, ranks and locates the
+way a search hit is, and is what the import offer asks now -- the same candidates in the same order,
+and complete where the search's cap of 200 could cut a class off behind unrelated hits.
+
+Measured on the VM. This repository: whole file p95 88-120 -> 11.1-11.3 ms, cursor 55-123 -> 4.7 ms,
+and the sweep passes. Laravel's own source, cloned without its `vendor/` -- so every class a test
+takes from PHPUnit or Mockery is one nothing declares, 388 of them in the largest file, which is
+what a project looks like before `composer install`: whole file p95 **1 745 -> 62 ms**, cursor p95
+**1 489 -> 18.6 ms** (p50 116 -> 7.6). Its other rows did not move; the four it fails besides are
+that corpus on that machine, as the 2026-09-25 note records. `search_symbols` itself is unchanged,
+4.7-4.9 ms a query on Laravel from either binary.
+
+What it still is: the fix-all asks about the whole file for every cursor, so a cursor's cost keeps a
+term in how many fixable problems the file has. That term is cheap now and is not gone.

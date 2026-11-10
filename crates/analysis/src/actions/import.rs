@@ -7,7 +7,6 @@
 //! What is added here is the other direction. Completion knows the class and needs the line;
 //! this knows a name that resolves to nothing and has to find the classes it could have meant.
 
-use phrost_model::short_name;
 use phrost_view::ImportKind;
 
 use super::{ActionKind, ActionSubject, CodeAction, Offer, SubjectSites, TextEdit};
@@ -21,13 +20,6 @@ pub(super) struct ImportClass;
 /// contrib modules -- and a menu longer than a glance is one nobody reads. The list is ranked, so
 /// the ones cut are the ones furthest from the file asking.
 const CANDIDATES: usize = 8;
-
-/// How far down the ranked search to look for exact short-name matches.
-///
-/// The search is by *prefix*, so asking for `Node` also returns `NodeType`, `NodeAccessControl` and
-/// the rest. Only the exact matches can be imported under the name as written, so the scan has to
-/// be wider than the number of offers it produces.
-const SCANNED: usize = 200;
 
 impl Offer for ImportClass {
     fn kind(&self) -> ActionKind {
@@ -71,18 +63,12 @@ impl Offer for ImportClass {
             }
 
             let mut offers = Vec::new();
-            for location in view.search_symbols(reference.path.as_str(), SCANNED) {
+            // Only a class of exactly this name can be imported and then written as it already
+            // is, and that is what is asked for -- not the symbol search, which matches a prefix
+            // and walks every member in the project to answer a picker.
+            for location in view.class_likes_named(reference.path.as_str()) {
                 if offers.len() == CANDIDATES {
                     break;
-                }
-                if !location.kind.is_class_like() {
-                    continue;
-                }
-                // The search matches a prefix; only an exact short name can be imported and then
-                // written as it already is.
-                if !short_name(location.fqn.as_str()).eq_ignore_ascii_case(reference.path.as_str())
-                {
-                    continue;
                 }
                 let Some(edit) = view.import_for(
                     reference.range.start(),

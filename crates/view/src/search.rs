@@ -129,6 +129,37 @@ impl<'a> IndexView<'a> {
             .collect()
     }
 
+    /// The class-likes declared under exactly this short name, project-wide, best first.
+    ///
+    /// What an import is offered from. It used to ask [`Self::search_symbols`] and throw away what
+    /// came back that was not a class of exactly that name -- which is asking the picker a
+    /// question the catalog answers with one range of its name order. The picker also matches
+    /// loosely and walks the members of every class the project declares, none of which an import
+    /// can use, and it was asked once per unresolved name: a file with twenty-eight of them paid
+    /// 24 ms for every code-action request, a bare cursor's included, because the whole-file fix
+    /// asks about the whole file each time.
+    ///
+    /// Ranked by the same key and located by the same step as a search hit, so the order among
+    /// the classes of one name is the search's own. Complete where the search was capped: nothing
+    /// that is not a class of this name competes for a place.
+    pub fn class_likes_named(&self, short: &str) -> Vec<SymbolLocation> {
+        let folded = short.to_ascii_lowercase();
+        let mut found = Vec::new();
+        for (name, declarers) in self.skeleton.owners().with_short_prefix(&folded) {
+            // The range is every name beginning with this one; only the one that *is* it.
+            if name.as_str().len() == folded.len() {
+                self.push_declarers(declarers, Fit::Prefix, &mut found);
+            }
+        }
+        found.sort_by(|left, right| self.compare(left, right));
+
+        found
+            .into_iter()
+            .filter_map(|hit| self.locate(&hit))
+            .filter(|location| location.kind.is_class_like())
+            .collect()
+    }
+
     /// Best first, with the path only consulted when nothing else separates two hits.
     ///
     /// The path is what keeps the order total -- two files can declare the same name, and ranking

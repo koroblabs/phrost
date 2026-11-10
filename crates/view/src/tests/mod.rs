@@ -172,6 +172,7 @@ mod calls;
 mod candidates;
 mod catalog_cursor;
 mod class_string_new;
+mod classes_of_one_name;
 mod closure_invocation;
 mod closure_this;
 mod coalescing_assignment;
