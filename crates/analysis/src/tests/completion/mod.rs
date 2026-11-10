@@ -11,6 +11,7 @@ mod destructured_locals;
 mod doc_tags;
 mod docblock_names;
 mod docblock_parameters;
+mod docblock_spelling;
 mod docblock_types;
 mod documented_keys;
 mod headers;

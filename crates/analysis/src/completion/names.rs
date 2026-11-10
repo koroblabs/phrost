@@ -129,7 +129,7 @@ pub(super) fn names(
             .chain(aliases)
             .chain(classes)
             .collect(),
-        Spelling::Imported => aliases
+        Spelling::Imported | Spelling::Meant => aliases
             .into_iter()
             .chain(classes)
             .chain(namespaces)
@@ -329,7 +329,7 @@ fn written_form(
         // A docblock. Fully qualified and anchored, and never imported: an import is a change to
         // the code, and a comment is not a reason to make one.
         Spelling::Qualified => return (format!("\\{fqn}"), None),
-        Spelling::Imported => {}
+        Spelling::Imported | Spelling::Meant => {}
     }
 
     // In the table the name actually belongs to. Resolving a function or a constant against the
@@ -345,6 +345,11 @@ fn written_form(
     if resolves_here {
         return (short.to_owned(), None);
     }
+    // A docblock again: what the file does not already mean by the short name is written out,
+    // for the reason above.
+    if spelling == Spelling::Meant {
+        return (format!("\\{fqn}"), None);
+    }
 
     match view.import_for(offset, fqn, import_kind_of(kind)) {
         Some(edit) => (short.to_owned(), Some(edit)),
@@ -359,6 +364,10 @@ pub(super) enum Spelling {
     Imported,
     /// Fully qualified with a leading separator, and never imported: inside a docblock.
     Qualified,
+    /// The short name where the file already means this by it, fully qualified where it does not,
+    /// and never imported: inside a docblock, in a file whose docblocks name classes the way its
+    /// code does.
+    Meant,
 }
 
 /// Which of PHP's three symbol tables a candidate belongs to.

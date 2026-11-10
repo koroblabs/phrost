@@ -54,6 +54,7 @@ mod declared_inputs;
 mod deprecated_uses;
 mod discarded_results;
 mod dispatched;
+mod docblock_names;
 mod documentable;
 mod documentation;
 mod documented_by;

@@ -193,6 +193,7 @@ mod forwarded_catalog_uses;
 mod free_function_contract;
 mod function_references;
 mod guarding_a_joined_value;
+mod how_docblocks_name_classes;
 mod implementers;
 mod implied_mixin;
 mod import_alias;

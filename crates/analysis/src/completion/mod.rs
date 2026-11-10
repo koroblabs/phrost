@@ -454,8 +454,13 @@ pub fn completions(view: &IndexView<'_>, offset: TextSize) -> CompletionList {
                 replace: TextRange::empty(offset),
             };
         }
+        // Spelled the way this file's docblocks spell a class -- from the root, or as the code
+        // names it. See `IndexView::docblocks_name_classes_short`.
         Some(CommentPlace::TypeTag | CommentPlace::TraitTag | CommentPlace::ReferenceTag) => {
-            Spelling::Qualified
+            match view.docblocks_name_classes_short() {
+                true => Spelling::Meant,
+                false => Spelling::Qualified,
+            }
         }
         None => Spelling::Imported,
     };

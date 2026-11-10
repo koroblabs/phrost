@@ -22,6 +22,11 @@ names the tag's version.
   ordered project code first and cut at two hundred rows with no knowledge of the file's `use`
   lines, so `Da` under `use Illuminate\Support\Facades\Date;` offered two hundred other names and
   not `Date`, and a function brought in with `use function` stood behind classes of the same name.
+- A class completed in a docblock is written the way the file's docblocks already write one. It was
+  always written from the root -- `@param \WP_Post`, `@throws \App\Lock\LockException` beside a
+  `use` line for that class -- which is Drupal's and Laravel's convention and nobody else's. A file
+  whose docblocks name classes as its code does now gets the name its code would write, and a file
+  that writes them from the root, or has named none yet, is completed as before.
 - A class is not imported a second time under a name a `use` line already holds. Where the file's
   own import named a class the project cannot see -- a dependency that is not installed -- accepting
   a namesake added a second `use` for the same name, which PHP refuses to load. It is written with
