@@ -264,11 +264,9 @@ class RLexer
 
     public function getToken(): Token {}
 
-    public function push(string $regex, int $id): void {}
-
-    public function push(string $state, string $regex, int $id, string $newState): void {}
-
-    public function push(string $state, string $regex, string $newState): void {}
+    // Three forms, told apart by count and type: (regex, id), (state, regex, newState) and
+    // (state, regex, id, newState).
+    public function push(string $state, int|string $regex, int|string $id = 0, string $newState = ''): void {}
 
     public function pushState(string $state): int {}
 

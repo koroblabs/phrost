@@ -836,8 +836,6 @@ class Imagick implements Iterator, Countable
 
     public function count(int $mode = 0): int {}
 
-    public function count(): int {}
-
     public function getPixelIterator(): ImagickPixelIterator {}
 
     public function getPixelRegionIterator(int $x, int $y, int $columns, int $rows): ImagickPixelIterator {}
@@ -1144,9 +1142,11 @@ class Imagick implements Iterator, Countable
 
     public function combineImages(int $colorspace): Imagick {}
 
-    public function convolveImage(ImagickKernel $kernel, int $channel = Imagick::CHANNEL_DEFAULT): bool {}
-
-    public function convolveImage(array $kernel, int $channel = Imagick::CHANNEL_DEFAULT): bool {}
+    // A kernel object when the extension is built against ImageMagick 7, a matrix against 6.
+    public function convolveImage(
+        ImagickKernel|array $kernel,
+        int $channel = Imagick::CHANNEL_DEFAULT,
+    ): bool {}
 
     public function cycleColormapImage(int $displace): bool {}
 
@@ -1363,9 +1363,8 @@ class Imagick implements Iterator, Countable
     /** @deprecated */
     public function setImageBiasQuantum(string $bias): void {}
 
-    public function setImageBluePrimary(float $x, float $y, float $z): bool {}
-
-    public function setImageBluePrimary(float $x, float $y): bool {}
+    // Three coordinates against ImageMagick 7, two against 6.
+    public function setImageBluePrimary(float $x, float $y, float $z = 0.0): bool {}
 
     /* {{{ proto bool Imagick::setImageBluePrimary(float x,float y)
      * For IM7 the prototype is
@@ -1383,25 +1382,22 @@ class Imagick implements Iterator, Countable
 
     public function setImageExtent(int $columns, int $rows): bool {}
 
-    public function setImageGreenPrimary(float $x, float $y, float $z): bool {}
-
-    public function setImageGreenPrimary(float $x, float $y): bool {}
+    // Three coordinates against ImageMagick 7, two against 6.
+    public function setImageGreenPrimary(float $x, float $y, float $z = 0.0): bool {}
 
     public function setImageInterlaceScheme(int $interlace): bool {}
 
     public function setImageProfile(string $name, string $profile): bool {}
 
-    public function setImageRedPrimary(float $x, float $y, float $z): bool {}
-
-    public function setImageRedPrimary(float $x, float $y): bool {}
+    // Three coordinates against ImageMagick 7, two against 6.
+    public function setImageRedPrimary(float $x, float $y, float $z = 0.0): bool {}
 
     public function setImageRenderingIntent(int $rendering_intent): bool {}
 
     public function setImageVirtualPixelMethod(int $method): bool {}
 
-    public function setImageWhitePoint(float $x, float $y, float $z): bool {}
-
-    public function setImageWhitePoint(float $x, float $y): bool {}
+    // Three coordinates against ImageMagick 7, two against 6.
+    public function setImageWhitePoint(float $x, float $y, float $z = 0.0): bool {}
 
     public function sigmoidalContrastImage(
         bool $sharpen,

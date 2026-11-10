@@ -98,10 +98,13 @@ fn the_local_delta_is_the_one_that_was_recorded() {
         filter.php +30 -0
         hash.php +97 -0
         iconv.php +60 -0
+        imagick.php +13 -17
+        intl.php +0 -8
         json.php +30 -0
         libxml.php +33 -0
         mbstring.php +304 -0
         openssl.php +3 -3
+        parle.php +3 -5
         pcre.php +58 -4
         pdo.php +264 -0
         phar.php +437 -0
@@ -120,7 +123,7 @@ fn the_local_delta_is_the_one_that_was_recorded() {
         zlib.php +138 -0
         swoole.php is in upstream and not in the vendored set
 
-        28 files differ, 9853 lines ours
+        31 files differ, 9869 lines ours
     "#]]
     .assert_eq(&rendered);
 }

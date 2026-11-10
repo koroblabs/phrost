@@ -21,7 +21,7 @@ found the normal state.
 that what this project changed is an artifact rather than a memory:
 
 ```
-just stubs-diff     the whole local delta -- 9 835 lines across 28 files
+just stubs-diff     the whole local delta -- 9 869 lines across 31 files
 just stubs-accept   re-record it after a deliberate edit
 ```
 
@@ -163,6 +163,27 @@ The **why**. What each edit *is* is `just stubs-diff`, which cannot go stale; th
 diff cannot carry — what was wrong, what it cost, and whether it is worth reporting upstream. A
 docblock this project's lowering cannot read is inert without failing anything, which looks exactly
 like a stub that does not work, and only a sentence can say which.
+
+- **Nine methods the set declared twice in one class are one declaration each** (`imagick.php`,
+  `intl.php`, `parle.php`). An extension can overload a method, or take a different signature
+  depending on the library it was built against, and PHP cannot write either -- the Imagick
+  extension's own stub puts `convolveImage(ImagickKernel $kernel, ...)` and
+  `convolveImage(array $kernel, ...)` either side of `#if MagickLibVersion >= 0x700`. Upstream
+  writes both out, which PHP refuses, and the index keeps the *last*: so the kernel object, which
+  is what a build against ImageMagick 7 takes and what throws a `TypeError` for an array there, was
+  reported as the wrong type on a real project. This used to be a row in the table of defects left
+  as vendored, on the ground that none of them costs anything in use. Probed, all nine do: ten false
+  findings, among them `IntlCalendar::set(2026, 10, 10)`, which is the standard library, and the
+  three-coordinate form of `setImageBluePrimary` and its three siblings.
+
+  Each is folded into the one signature that takes whatever either took, which is the weaker claim
+  and the only one a stub can make about a build it cannot see: `ImagickKernel|array $kernel`, a
+  third coordinate that may be left out, `Imagick::count(int $mode = 0)`, `IntlCalendar::set` with
+  its four trailing parameters optional, and `Parle\RLexer::push` over its three forms. What that
+  gives up is reporting the form the installed build refuses, which nothing here could have told
+  apart. `no_class_in_the_set_declares_one_method_twice` counts them back to zero, and its
+  neighbour lists what the published set still declares twice, so a fold upstream takes shows up
+  as one this set can stop carrying. **Worth reporting upstream.**
 
 - `DateInterval`'s eleven properties lost their `readonly` modifier (`date.php`). PHP declares none
   of them readonly: `$interval->invert = 1;` is how a negative interval is built by hand, and
@@ -400,7 +421,7 @@ like a stub that does not work, and only a sentence can say which.
 
 ## Known defects, left as vendored
 
-`phrost check third_party/php-prelude` reports 56 beside the two lint categories, and every one of them is a defect in the vendored
+`phrost check third_party/php-prelude` reports 54 beside the two lint categories, and every one of them is a defect in the vendored
 set rather than in the checker -- which is why they are recorded here instead of edited away: a local
 edit is silently reverted by a re-vendor, and none of these costs anything in use. The stubs are
 indexed as `SourceOrigin::Stub`, so a project's own `check` never reports them.
@@ -412,7 +433,8 @@ indexed as `SourceOrigin::Stub`, so a project's own `check` never reports them.
 | `unused-import` | 8 | `use RuntimeException;` beside code that writes `\RuntimeException` |
 | `bad-override` | 1 | `phar.php` redeclares `_bad_state_ex()`, which `SplFileInfo` declares `final` |
 | `refused-declaration` | 2 | `random.php` gives `enum IntervalBoundary` a `public string $name`, which PHP refuses: an enum holds cases, constants and methods, and `$name` is implicit. And `exec()` declares `int|int &$result_code`, which is `Duplicate type int is redundant` -- a generator artifact, and **worth reporting upstream** |
-| `redeclared-member` | 9 | an extension's *overloads* written out as PHP, which PHP itself refuses: `Parle\RLexer::push` three times with three signatures, `Imagick::count`, `::convolveImage` and the four `setImage*Primary`/`WhitePoint`, `IntlCalendar::set` |
+| `unknown-named-parameter` | 5 | `#[Deprecated(reason: ...)]`, once in `intl.php` and four times in `reflection.php`: PHP's attribute takes `message` and `since`, and `reason` is the name JetBrains' own attribute gives it |
+| `doc-undefined-type` | 2 | `@return v` in `spl.php` and `@param Job $job` in `zend.php`, neither of which names anything |
 
 ### What the set does not declare at all
 
@@ -467,6 +489,6 @@ Then check, in this order, because each catches what the one before cannot:
    nothing extra, no new duplicates. This is what proves the merge structurally, and it is the only
    check that sees a moved declaration.
 2. `cargo nextest run -p phrost-stubs` -- the parse test and the summary tripwire.
-3. `phrost check third_party/php-prelude` against the known-defects table above -- 56, and the
+3. `phrost check third_party/php-prelude` against the known-defects table above -- 54, and the
    same six kinds, beside the `no-ffi` and `no-literal-password` lint findings the declarations make.
 4. `phrost check` over the corpora, diffing the **findings** and not the counts.

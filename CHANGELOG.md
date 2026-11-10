@@ -23,6 +23,14 @@ names the tag's version.
   through, and the second decides by a parameter's name.
 - `strict-behavior` asks `base64_decode` for strict decoding, where it said strict comparison.
 
+**The type checker**
+
+- A method an extension overloads, or declares differently for the library it was built against,
+  takes every form the extension does: `Imagick::convolveImage()` with a kernel object or a matrix,
+  `setImageBluePrimary()` and its siblings with two coordinates or three, `IntlCalendar::set()` with
+  a field and a value or a whole date. The stubs declared each twice and only the last counted, so
+  the other form was reported as a wrong or an extra argument.
+
 **Faster**
 
 - Diagnostics for a file of `define()` calls, or any long run of calls taking literals: a 3317-line

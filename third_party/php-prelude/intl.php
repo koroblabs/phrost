@@ -982,14 +982,6 @@ class IntlCalendar
      */
     public function set($year, $month, $dayOfMonth = null, $hour = null, $minute = null, $second = null) {}
 
-    /**
-     * @param int $field
-     * @param int $value
-     *
-     * @return bool
-     */
-    public function set($field, $value) {}
-
     public function setFirstDayOfWeek(int $dayOfWeek): bool {}
 
     public function setLenient(bool $lenient): bool {}
