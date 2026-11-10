@@ -3,7 +3,7 @@
 A release's section is its notes on GitHub: the release workflow publishes the section whose heading
 names the tag's version.
 
-## Unreleased
+## 0.1.3
 
 - A variable completes again in Zed. `$ap` was answered with `$app` and the editor showed nothing:
   the item was sent to be filtered without its `$`, and Zed counts the `$` as part of the word.
