@@ -32,6 +32,7 @@ from lspclient import (  # noqa: E402
     Closed,
     Server,
     Timeout,
+    is_configuration_file,
     is_dependency_dir,
     path_of,
     uri_of,
@@ -377,7 +378,8 @@ def php_files(root, needle, limit):
             and not is_dependency_dir(os.path.join(directory, name), root)
         )
         for name in sorted(names):
-            if name.endswith(".php"):
+            # And not a file the server reads as configuration: see `is_configuration_file`.
+            if name.endswith(".php") and not is_configuration_file(os.path.join(directory, name)):
                 paths.append(os.path.join(directory, name))
     if needle:
         paths = [path for path in paths if needle in path]

@@ -327,6 +327,31 @@ def is_dependency_dir(path, root):
     # beside it is the project's own.
     if name == "contrib":
         return True
+    # `sites/simpletest` is where Drupal's test runner materialises throwaway sites.
+    if name == "simpletest" and os.path.basename(os.path.dirname(path)) == "sites":
+        return True
     # `core` only where it *is* Drupal's, which its own marker file settles -- a directory called
     # `core` is otherwise an ordinary name a project may use for its own code.
     return name == "core" and os.path.isfile(os.path.join(path, CORE_MARKER))
+
+
+def is_configuration_file(path):
+    """Whether a `.php` file is one a server reads as configuration and does not index.
+
+    Drupal's `settings.php`, `default.settings.php`, `example.settings.local.php`, `sites.php` and
+    `example.sites.php`, under `sites/` or one site's directory in it: arrays of credentials and
+    `$settings` keys with no declaration in them. phrost leaves them out by name -- see
+    `providers/drupal/sites.rs`, which this mirrors -- and a sampler that drew one as its readiness
+    probe asked about a file the server had never heard of: `a-selection-grows-...` took its anchor
+    from the last file of the sample, which on Drupal core's own checkout is
+    `sites/example.settings.local.php`, and waited out fifteen minutes for an answer.
+    """
+    directory, name = os.path.split(path)
+    if not name.endswith(".php"):
+        return False
+    if not any(part in ("settings", "sites") for part in name[: -len(".php")].split(".")):
+        return False
+    return "sites" in (
+        os.path.basename(directory),
+        os.path.basename(os.path.dirname(directory)),
+    )
