@@ -1192,7 +1192,9 @@ pub fn passed_to_calls(
 ///
 /// A superset by construction: every call shape the walk reads is read here, in every scope, and
 /// each path is kept without its nullsafe flag, which is the one field
-/// [`same_slot`](crate::path::same_slot) does not compare.
+/// [`same_slot`](crate::path::same_slot) does not compare. The one thing left out is a value with
+/// no name -- a literal, a cast -- which no call can have said anything lasting about; see
+/// [`ValuePath::names_a_value`].
 ///
 /// A method call's receiver is recorded only where `leaves_receiver` says its name may be declared
 /// to change what the receiver holds. Every receiver of every call is most of the file, and a path
@@ -1237,7 +1239,12 @@ impl PassedPaths {
                             ExprData::Assign { target, .. } => *target,
                             _ => value,
                         };
-                        if let Some(mut path) = path_of(hir, value) {
+                        // Only a value with a name. A literal's path is the type it produces, so
+                        // every `1` in the file would be recorded as one value handed to every
+                        // call that took any of them -- and each read of one would then walk them
+                        // all. See `ValuePath::names_a_value`.
+                        if let Some(mut path) = path_of(hir, value).filter(ValuePath::names_a_value)
+                        {
                             path.may_be_absent = false;
                             let statements = passed.entry(path).or_default();
                             if statements.last() != Some(&statement) {

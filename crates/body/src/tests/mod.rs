@@ -12,6 +12,7 @@ mod a_container_filled_elsewhere;
 mod a_flag_whose_subject_was_replaced;
 mod a_guard_in_the_branch_not_taken;
 mod a_guard_that_holds_at_the_read;
+mod a_literal_handed_to_a_call;
 mod a_loop_in_the_other_arm;
 mod a_loop_that_writes_through_a_reference;
 mod a_name_two_loops_bind;

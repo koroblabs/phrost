@@ -701,3 +701,35 @@ the first three -- the change is to how an answer is reached, and the one place 
 request is the return of each unhinted method, and `ProjectSkeleton::rank` re-sorting the declarers
 of a model that `_ide_helper_models.php` declares a second time on every `class_header` -- about 4 %
 of a diagnostics run, measured and not worth a cache yet.
+
+## Every literal was one value, so a file of `define()` calls was quadratic
+
+`perf` over this repository itself -- whose "user code" is the two copies of the stub set -- failed
+on 2026-11-10 with one file far out: **145 ms** of diagnostics for `php-prelude-upstream/swoole.php`
+on the Mac, 308-415 ms on the workspace VM, 97 % of it `IncompatibleArgument`. Not a regression: the
+binary from before that day's commits measured the same.
+
+The file ends in 393 lines of `define('SWOOLE_X', 1);`. Bisected with generated files, since nothing
+on that machine profiles: 400 calls of `define('C', 1)` took 135 ms and 800 took 485; 400 calls
+passing a _string_ literal took 15. The stage was `resolve_path` on the argument, inside it
+`held_after_steps`, and inside that `contract_narrowed` -- the reader of what a statement call
+asserted about a value it was handed.
+
+`PassedPaths` is keyed by the value's path, and a literal's path is `PathRoot::Builtin` of the type
+it produces. So every integer written in a file was one key, every call that took any of them was
+filed under it, and resolving the next literal read all the calls before it. §8.1's _two spellings
+collapsing into one_, in the index built to remove the quadratic the note above records: a string
+literal escaped only because its root carries the expression. `ValuePath::names_a_value` says which
+paths are worth recording -- anything but a bare builtin -- and the index leaves the rest out.
+
+Measured: 800 `define()` calls 461 -> 30 ms, `swoole.php` alone 180 -> 44 ms, the sweep's worst
+diagnostics 308-415 -> 12.4-12.8 ms. No answer moved: every finding on Symfony, WordPress, Drupal
+and Laravel is the same line (124 027 of them), and `coverage --dump` is byte-identical on Laravel
+(243 550 lines) and WordPress (110 826). Serial `check` is inside the noise.
+
+Two things it leaves. A _named_ value handed to four hundred statement calls in one body is still
+read four hundred times over (100 ms on the same generated shape with a local), which is the same
+walk asked a fair question. And the sweep's two code-action rows stay over budget on that root for a
+different reason, already written down where it lives: every sort of subject is answered by walking
+the whole file (`actions/subject.rs`), and `source.fixAll` asks all of them about the whole file for
+every cursor -- 25 ms of `name_references` on a 3 317-line file of declarations.

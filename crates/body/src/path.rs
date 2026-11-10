@@ -73,6 +73,23 @@ impl ValuePath {
         self.steps.is_empty() && self.root == PathRoot::Builtin(phrost_model::BuiltinTy::Null)
     }
 
+    /// Whether two readings of this path are readings of one value.
+    ///
+    /// A local, `$this`, a property, a call: each names something, so what a statement said about
+    /// it is worth asking about where it is named again. A literal, a cast and a comparison name
+    /// nothing. Their root is the *type* the expression produces, which makes every `7`, every
+    /// `null` and every `(int) $x` in a file one path -- equal by construction, and about unrelated
+    /// values.
+    ///
+    /// What that cost, before anything asked: the index of which statement calls a path is handed
+    /// to filed every integer literal under one key, so resolving any of them read every call
+    /// before it that took one. A file of `define('NAME', 1);` lines is that shape and nothing
+    /// else -- 393 of them in one stub file took 325 ms in the argument check, and 800 synthetic
+    /// ones took four times what 400 did.
+    pub fn names_a_value(&self) -> bool {
+        !(self.steps.is_empty() && matches!(self.root, PathRoot::Builtin(_)))
+    }
+
     /// Whether a guard can have been written about this path itself rather than about a step of it.
     ///
     /// A path with steps always can: `$this->thing()` is a slot and `if ($this->thing())` narrows
