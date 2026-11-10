@@ -53,6 +53,47 @@ pub(super) fn names(
         );
     }
     let aliases = aliases_offered(view, prefix, place);
+    // Of several declarations sharing one short name, the one this file imports stands first among
+    // them. The catalog orders namesakes by where each is declared, which says nothing about which
+    // is meant -- and the file has said: `new RuntimeE` under `use RuntimeException;` offered the
+    // MongoDB extension's class ahead of PHP's and wrote its whole path on accept, because
+    // `mongodb.php` sorts before `spl.php`.
+    //
+    // Among its namesakes and no further. Where a name stands against *other* names is the
+    // ranking's -- the project's own first, then by name -- and an import does not outrank a class
+    // of the file's own namespace. And by symbol table: `use function Termwind\terminal;` says
+    // nothing about the class `Termwind\Terminal`, which differs from it only by case.
+    let imported = match prefix.contains('\\') {
+        true => Vec::new(),
+        false => view.imported_as_written(prefix, place.kinds()),
+    };
+    let mut candidates = candidates;
+    for bound in &imported {
+        let slots: Vec<usize> = candidates
+            .iter()
+            .enumerate()
+            .filter(|(_, candidate)| {
+                import_kind_of(candidate.kind) == import_kind_of(bound.kind)
+                    && candidate
+                        .short()
+                        .eq_ignore_ascii_case(short_name(bound.fqn.as_str()))
+            })
+            .map(|(at, _)| at)
+            .collect();
+        let Some(held) = slots.iter().position(|&at| {
+            candidates[at]
+                .fqn
+                .as_str()
+                .eq_ignore_ascii_case(bound.fqn.as_str())
+        }) else {
+            // The page was too full to hold it, and it is left out as it was.
+            continue;
+        };
+        // Up to the first slot its namesakes hold, each of them moving down one.
+        for slot in (0..held).rev() {
+            candidates.swap(slots[slot], slots[slot + 1]);
+        }
+    }
     let classes = candidates
         .into_iter()
         // `__INTERNAL_DO_NOT_USE__StringBackedEnum` and its `Int` sibling are interfaces a stub

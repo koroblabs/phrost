@@ -10,6 +10,9 @@ names the tag's version.
   Every variable and static property was affected, in 0.1.0 through 0.1.2.
 - Accepting a variable in a closure's `use (...)` no longer doubles the `$`: `use ($al` became
   `use ($$alpha)`.
+- Of several classes with one short name, the one the file imports is offered first. In a file with
+  `use RuntimeException;`, `new RuntimeE` put the MongoDB extension's class ahead of PHP's and wrote
+  its full path when accepted.
 - `setrawcookie()` takes its options array: `setrawcookie($name, $value, ['expires' => $at])` was
   reported as an array given for an `int`, because the stubs declared the function's two forms
   separately and only the first was read.

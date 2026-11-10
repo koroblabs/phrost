@@ -443,3 +443,48 @@ class Service
         "#]],
     );
 }
+
+/// Two classes of one short name, and the file has said which it means. The row for the one it
+/// imports leads and writes the short name; the other is still there, by its full path.
+///
+/// They used to stand in the order of the files that declare them -- PHP's `RuntimeException` is
+/// in `spl.php` and the MongoDB extension's in `mongodb.php` -- so `new RuntimeE` in a file with
+/// `use RuntimeException;` put the driver's class first and accepting it wrote
+/// `\MongoDB\Driver\Exception\RuntimeException`.
+#[test]
+fn of_two_classes_with_one_name_the_imported_one_leads() {
+    check(
+        r#"
+//- /src/Alpha/Failure.php
+<?php
+namespace App\Alpha;
+
+class Failure {}
+
+//- /src/Omega/Failure.php
+<?php
+namespace App\Omega;
+
+class Failure {}
+
+//- /src/Job.php
+<?php
+namespace App;
+
+use App\Omega\Failure;
+
+function run(): void
+{
+    throw new Fail@here@;
+}
+"#,
+        &[Query::completion("a name two classes share", "here")],
+        expect![[r#"
+            a name two classes share
+            - Failure [class]  App\Omega\Failure
+            - Failure [class]  App\Alpha\Failure  insert `\App\Alpha\Failure`
+            - ... and the client must ask again
+            - accepting the first leaves `throw new Failure;`
+        "#]],
+    );
+}
