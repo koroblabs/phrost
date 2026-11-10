@@ -355,9 +355,25 @@ const MAGO_SUPPRESSION_ADVICE: &[(&str, &str)] = &[(
      its code to `phrost.toml`'s `[lint]` table, under `off`.",
 )];
 
+/// A sentence of mago's that is untrue of the code it is said about.
+///
+/// `strict-behavior` reports four functions in one sentence -- "must enforce strict comparison" --
+/// and three of them compare: `in_array`, `array_search`, `array_keys`. `base64_decode` compares
+/// nothing. Its `$strict` decides whether a character outside the base64 alphabet fails the decode
+/// or is silently dropped, so the finding is right and the help beside it is right, and the
+/// headline sends the reader looking for a comparison the line does not make. 97 of the rule's
+/// 1 004 findings on four frameworks' own source are that function.
+///
+/// The same table shape as the advice above and for the same reason: keyed to the wording, so a
+/// sentence mago corrects stops matching and comes through as mago wrote it.
+const MAGO_MISSTATEMENTS: &[(&str, &str)] = &[(
+    "Call to `base64_decode` must enforce strict comparison.",
+    "Call to `base64_decode` must enforce strict decoding.",
+)];
+
 fn speaking_only_of_phrost(text: std::borrow::Cow<'_, str>) -> String {
     let mut text = text.into_owned();
-    for (mago_wording, phrost_wording) in MAGO_SUPPRESSION_ADVICE {
+    for (mago_wording, phrost_wording) in MAGO_SUPPRESSION_ADVICE.iter().chain(MAGO_MISSTATEMENTS) {
         if text.contains(mago_wording) {
             text = text.replace(mago_wording, phrost_wording);
         }
@@ -697,6 +713,10 @@ mod no_error_control_operator_tests;
 #[cfg(test)]
 #[path = "lint/version_gated_rules.rs"]
 mod version_gated_rules_tests;
+
+#[cfg(test)]
+#[path = "lint/strict_behavior.rs"]
+mod strict_behavior_tests;
 
 #[cfg(test)]
 mod tests {
