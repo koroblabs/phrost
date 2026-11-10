@@ -38,6 +38,15 @@ pub struct NameReference {
     pub cross_reference: bool,
 }
 
+/// What kind of name a docblock declared for its own type language.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum DocblockName {
+    /// `@template T`, in any of its spellings.
+    Template,
+    /// `@phpstan-type Row array{...}`, Psalm's form, or one imported from another class.
+    TypeAlias,
+}
+
 impl IndexView<'_> {
     /// Every template parameter and type alias a docblock in the current file declares.
     ///
@@ -63,6 +72,54 @@ impl IndexView<'_> {
             .collect::<Vec<_>>();
         names.sort();
         names.dedup();
+        names
+    }
+
+    /// The template parameters and type aliases a docblock at `offset` can name: what the docblock
+    /// the offset is in declares, and what the docblock of the class around it does.
+    ///
+    /// The scope and not the file, unlike [`Self::templates_declared`] beside it. That one keeps a
+    /// check quiet, where naming too much is the safe side; this one is offered to a person, and a
+    /// template of some other class in the file is a name that means nothing where they are.
+    /// In the order they are declared, the docblock's own first.
+    pub fn templates_in_scope(
+        &self,
+        offset: phrost_model::TextSize,
+    ) -> Vec<(String, DocblockName)> {
+        let Some(open) = self.current() else {
+            return Vec::new();
+        };
+        let hir = open.hir();
+        let own = hir
+            .docblocks()
+            .find(|(_, docblock)| docblock.range.contains_inclusive(offset))
+            .map(|(id, _)| id);
+        let of_the_class = hir
+            .classes()
+            .filter(|(_, class)| class.full_range.contains_inclusive(offset))
+            .min_by_key(|(_, class)| class.full_range.len())
+            .and_then(|(_, class)| class.docblock);
+
+        let mut names: Vec<(String, DocblockName)> = Vec::new();
+        for id in [own, of_the_class.filter(|class| Some(*class) != own)]
+            .into_iter()
+            .flatten()
+        {
+            let docblock = hir.docblock(id);
+            let declared = docblock
+                .template_names()
+                .map(|name| (name, DocblockName::Template))
+                .chain(
+                    docblock
+                        .alias_names()
+                        .map(|name| (name, DocblockName::TypeAlias)),
+                );
+            for (name, kind) in declared {
+                if !names.iter().any(|(seen, _)| seen == name) {
+                    names.push((name.to_owned(), kind));
+                }
+            }
+        }
         names
     }
 

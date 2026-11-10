@@ -12,7 +12,8 @@
 //! long. Offering a keyword somewhere PHP refuses it is offering a fatal error, which is the same
 //! reason a capture list leaves out `$this`.
 
-use phrost_model::SymbolKind;
+use phrost_model::{SymbolKind, TextSize};
+use phrost_view::{DocblockName, IndexView};
 
 use super::CompletionItem;
 use crate::context::TypePlace;
@@ -116,6 +117,50 @@ pub(super) fn type_keywords(place: TypePlace, prefix: &str) -> Vec<CompletionIte
             kind: SymbolKind::Keyword,
             // Nothing to say about a keyword that the word does not already say.
             detail: None,
+            describe: None,
+            insert: None,
+            call: None,
+            import: None,
+        })
+        .collect()
+}
+
+/// The template parameters and type aliases a docblock at `offset` can name, matching what has
+/// been typed.
+///
+/// `@return TVa|null` under a class's `@template TValue` offered a hundred and sixty-seven classes
+/// and not the one name the line was about: a template is declared by a docblock and by nothing the
+/// catalog holds. Laravel's `BuildsQueries` writes it on three methods in a row.
+///
+/// Without regard to case, as a class is matched and unlike the keywords beside it: a template is
+/// written `TValue` and looked for by `tva`.
+pub(super) fn declared_here(
+    view: &IndexView<'_>,
+    offset: TextSize,
+    prefix: &str,
+) -> Vec<CompletionItem> {
+    view.templates_in_scope(offset)
+        .into_iter()
+        .filter(|(name, _)| {
+            name.len() > prefix.len()
+                && name
+                    .get(..prefix.len())
+                    .is_some_and(|start| start.eq_ignore_ascii_case(prefix))
+        })
+        .map(|(name, declared)| CompletionItem {
+            demoted: false,
+            deprecated: false,
+            label: name,
+            // A word of the docblock's own language, which is what a keyword is here: nothing
+            // declares it that a kind could name.
+            kind: SymbolKind::Keyword,
+            detail: Some(
+                match declared {
+                    DocblockName::Template => "template",
+                    DocblockName::TypeAlias => "type alias",
+                }
+                .to_owned(),
+            ),
             describe: None,
             insert: None,
             call: None,

@@ -526,7 +526,13 @@ pub fn completions(view: &IndexView<'_>, offset: TextSize) -> CompletionList {
                 // class name. A property's place also takes the declaration keywords, since
                 // `public fu` is on its way to `function` as readily as to a type.
                 NamePlace::Type(place) => {
-                    let mut first = type_keywords(*place, prefix);
+                    let mut first = match place {
+                        // Ahead of the keywords for the reason the names stand behind both: the
+                        // handful of names this docblock can use and nothing else can.
+                        TypePlace::Docblock => type_names::declared_here(view, offset, prefix),
+                        _ => Vec::new(),
+                    };
+                    first.extend(type_keywords(*place, prefix));
                     if *place == TypePlace::Property {
                         first.extend(keywords(prefix));
                     }

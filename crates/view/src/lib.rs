@@ -190,7 +190,7 @@ pub use self::{
     keys::ShapeKey,
     location::{ClassHeader, MemberModifiers, SymbolLocation},
     named_arguments::{Misnamed, MisnamedArgument, NamedParameter},
-    names::NameReference,
+    names::{DocblockName, NameReference},
     namespace_paths::PathContinuations,
     namespaces::NamespaceDeclaration,
     not_callable::NotCallable,

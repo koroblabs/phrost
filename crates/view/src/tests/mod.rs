@@ -220,6 +220,7 @@ mod references;
 mod self_through_a_static_call;
 mod slot_literal;
 mod template_element_return;
+mod templates_in_scope;
 mod the_receiver_as_a_type_argument;
 mod twig_callables;
 mod twig_template_names;
