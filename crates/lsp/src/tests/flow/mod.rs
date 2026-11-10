@@ -15,6 +15,7 @@ mod a_test_the_runner_catches;
 mod a_twig_template;
 mod a_twig_variable;
 mod a_value_that_answers_anything;
+mod a_variable_keeps_its_sigil;
 mod accepted_completion;
 mod an_id_completed_past_its_dot;
 mod an_included_template;

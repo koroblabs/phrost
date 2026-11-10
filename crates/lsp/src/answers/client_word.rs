@@ -7,6 +7,12 @@
 //! id that merely contains the last word. An item starting with everything typed up to that word is
 //! handed over with the rest of itself as `filterText` -- `manager`, `memo.manager` -- which is what
 //! the client's word is then compared against.
+//!
+//! A word holds `$`. Zed's PHP language says so (`word_characters`, `completion_query_characters`)
+//! and so does VS Code's PHP word pattern, so at `$ap|` the client filters by `$ap` -- and `$app`
+//! handed over as `filterText: "app"` has no `$` to match it with, which hid every variable and
+//! every static property from the list. Counting `$` in the word when a client does not is only a
+//! shorter head: the item keeps more of its label, which still holds everything that was typed.
 
 /// The text typed before the client's word: everything up to and including the last character no
 /// word holds. Empty when the whole of what was typed is one word.
@@ -18,9 +24,14 @@ impl<'a> TypedHead<'a> {
             typed
                 .char_indices()
                 .rev()
-                .find(|(_, ch)| !(ch.is_alphanumeric() || *ch == '_'))
+                .find(|(_, ch)| !Self::in_word(*ch))
                 .map_or("", |(at, ch)| &typed[..at + ch.len_utf8()]),
         )
+    }
+
+    /// Whether some client counts `ch` as part of the word it filters by.
+    fn in_word(ch: char) -> bool {
+        ch.is_alphanumeric() || ch == '_' || ch == '$'
     }
 
     /// The `filterText` for an item labelled `label`: its rest past the head, when it starts with it.
