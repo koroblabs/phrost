@@ -11,6 +11,9 @@ use crate::tests::{Query, check};
 fn a_bare_prefix_offers_names_and_says_how_to_write_them() {
     // An imported name is inserted short; anything else fully qualified, which is verbose and always
     // correct. Offering the short name and leaving the file broken is not a trade worth making.
+    //
+    // And the imported one stands first, ahead of the project's own class the alphabet and the
+    // origin both put before it: a `use` line is the file saying which name it means.
     check(
         r#"
 //- /src/Repo.php
@@ -42,10 +45,10 @@ class Client
         &[Query::completion("names", "here")],
         expect![[r#"
             names
-            - Repo [class]  App\Repo
             - Report [class]  Acme\Report
+            - Repo [class]  App\Repo
             - ... and the client must ask again
-            - accepting the first leaves `new Repo`
+            - accepting the first leaves `new Report`
         "#]],
     );
 }

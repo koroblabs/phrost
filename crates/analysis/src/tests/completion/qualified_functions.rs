@@ -197,11 +197,11 @@ function size(): int
             - ... and the client must ask again
             - accepting the first leaves `return min(render(), 150);`
             declared under a guard
+            - terminal [function]  Termwind\terminal
             - Terminal [class]  Other\Terminal  + `use Other\Terminal;` at 4:32-4:32
             - Terminal [class]  Termwind\Terminal  + `use Termwind\Terminal;` at 4:32-4:32
-            - terminal [function]  Termwind\terminal
             - ... and the client must ask again
-            - accepting the first leaves `return min(Terminal(), 150);`
+            - accepting the first leaves `return min(terminal(), 150);`
         "#]],
     );
 }

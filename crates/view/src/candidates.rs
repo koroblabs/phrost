@@ -37,6 +37,9 @@ const LOOSE_FLOOR: usize = 3;
 
 struct RankedPage {
     preferred: Vec<Candidate>,
+    /// What the file's own `use` lines name, after the names typed exactly and ahead of every tier
+    /// the walk fills. See [`Self::import`].
+    imported: Vec<Candidate>,
     /// What begins with the prefix, the project's own and then everything else; and after both, what
     /// holds it loosely, in the same two halves. See [`Self::loosen`].
     tiers: [Vec<Candidate>; 4],
@@ -53,6 +56,7 @@ impl RankedPage {
     fn new(limit: usize) -> Self {
         Self {
             preferred: Vec::new(),
+            imported: Vec::new(),
             tiers: Default::default(),
             loose: false,
             limit,
@@ -91,7 +95,22 @@ impl RankedPage {
     /// of those there is nothing a looser match could add, and the walk over the project's names
     /// does not happen at all.
     fn is_full(&self) -> bool {
-        self.preferred.len() + self.tiers[USER].len() + self.tiers[OTHER].len() >= self.limit
+        self.preferred.len()
+            + self.imported.len()
+            + self.tiers[USER].len()
+            + self.tiers[OTHER].len()
+            >= self.limit
+    }
+
+    /// Records a name the file imports, which neither its origin nor the cap has a say in.
+    ///
+    /// A `use` line is the file saying which class it means, and the page is ordered and cut with
+    /// no knowledge of it: project code first and then by name, two hundred rows. So `Da|::` under
+    /// `use Illuminate\Support\Facades\Date;` offered two hundred other names and not `Date`,
+    /// and `Ro|` under an imported `Route` put it twenty-fifth. Bounded by how many lines the file
+    /// has, so it is never what fills the page.
+    fn import(&mut self, candidate: Candidate) {
+        self.imported.push(candidate);
     }
 
     /// Records a candidate ahead of every other tier.
@@ -124,6 +143,7 @@ impl RankedPage {
         // fill the page, the rest of the pass is dropped by `finish` whatever it holds.
         let first_of_pass = if self.loose { 2 } else { 0 };
         let above = self.preferred.len()
+            + self.imported.len()
             + self.tiers[..=first_of_pass]
                 .iter()
                 .map(Vec::len)
@@ -134,7 +154,7 @@ impl RankedPage {
     /// The tiers in order, cut at `limit`.
     fn finish(self) -> Vec<Candidate> {
         let mut out = self.preferred;
-        for tier in self.tiers {
+        for tier in std::iter::once(self.imported).chain(self.tiers) {
             let room = self.limit.saturating_sub(out.len());
             out.extend(tier.into_iter().take(room));
         }
@@ -158,6 +178,17 @@ enum SymbolTable {
     ClassLike,
     Function,
     Constant,
+}
+
+impl SymbolTable {
+    /// The table a `use` line of this kind binds into.
+    fn of(kind: phrost_hir::ImportKind) -> Self {
+        match kind {
+            phrost_hir::ImportKind::ClassLike => Self::ClassLike,
+            phrost_hir::ImportKind::Function => Self::Function,
+            phrost_hir::ImportKind::Constant => Self::Constant,
+        }
+    }
 }
 
 impl<'a> OfferedName<'a> {
@@ -263,6 +294,74 @@ impl<'a> IndexView<'a> {
                     }) {
                         return page.finish();
                     }
+                }
+            }
+        }
+
+        // What the file's own `use` lines name, before the walk: see `RankedPage::import`. Only
+        // a line that binds the declared name -- an alias is a name of its own, offered beside
+        // these -- and only what begins with what was typed, which is all a file's imports are
+        // ever asked for by.
+        if let Some(open) = self.current() {
+            let hir = open.hir();
+            let namespace = hir.namespace_at(offset);
+            for (_, import) in hir.imports() {
+                if import.alias.is_some() || import.namespace != namespace {
+                    continue;
+                }
+                let local = import.local.as_str().to_ascii_lowercase();
+                if !local.starts_with(&folded) {
+                    continue;
+                }
+                let path = import.path.as_str().trim_start_matches('\\');
+                let table = SymbolTable::of(import.kind);
+                // The exact key, which is the first a range from it holds.
+                let Some((_, declarers)) = self
+                    .skeleton
+                    .owners()
+                    .with_short_prefix(&local)
+                    .next()
+                    .filter(|(name, _)| name.as_str() == local)
+                else {
+                    continue;
+                };
+                for declarer in self.skeleton.rank(declarers) {
+                    if !kinds.accepts(declarer.kind) {
+                        continue;
+                    }
+                    let Some(file) = self.skeleton.file(declarer.file) else {
+                        continue;
+                    };
+                    let Some(symbol) = file.scope().symbols().get(declarer.symbol as usize) else {
+                        continue;
+                    };
+                    let name = OfferedName::of(symbol.fqn.as_str(), symbol.kind);
+                    if name.table != table || !symbol.fqn.as_str().eq_ignore_ascii_case(path) {
+                        continue;
+                    }
+                    // The place's own rule, which the kind alone does not carry.
+                    if kinds == NameKinds::Attribute
+                        && !self.class_is_attribute(symbol.fqn.as_str())
+                    {
+                        break;
+                    }
+                    if !taken.iter().any(|seen| seen.is(&name)) {
+                        taken.push(name);
+                        let candidate = Candidate {
+                            fqn: symbol.fqn.clone(),
+                            kind: symbol.kind,
+                            file: declarer.file,
+                            deprecated: symbol.is_deprecated(),
+                        };
+                        // Typed in full, it is the first of the names typed in full: the walk
+                        // below finds its namesakes and would otherwise put them ahead of it.
+                        match local == folded {
+                            true => _ = page.prefer(candidate),
+                            false => page.import(candidate),
+                        }
+                    }
+                    // One row per name: the ranking has said which declarer a reader is sent to.
+                    break;
                 }
             }
         }

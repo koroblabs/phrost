@@ -208,6 +208,7 @@ mod list_literal;
 mod magic_property;
 mod match_value;
 mod memo;
+mod names_a_file_imports;
 mod navigation;
 mod non_empty_settles_a_conditional;
 mod one_argument_to_a_container_is_its_value;

@@ -18,6 +18,10 @@ names the tag's version.
   editor that filters a list by the text an item replaces -- rather than by the word at the cursor,
   as Zed does -- no longer drops it: a `use` path (`use App\Http\Resp`), a name written from the
   root (`new \RuntimeE`) and a service id past its dot (`service('application.ma')`).
+- A name the file imports is offered ahead of the rest and is always in the list. The list is
+  ordered project code first and cut at two hundred rows with no knowledge of the file's `use`
+  lines, so `Da` under `use Illuminate\Support\Facades\Date;` offered two hundred other names and
+  not `Date`, and a function brought in with `use function` stood behind classes of the same name.
 - A class is not imported a second time under a name a `use` line already holds. Where the file's
   own import named a class the project cannot see -- a dependency that is not installed -- accepting
   a namesake added a second `use` for the same name, which PHP refuses to load. It is written with
