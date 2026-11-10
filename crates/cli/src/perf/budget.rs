@@ -28,6 +28,13 @@ pub(crate) const BUDGETS: &[Budget] = &[
     // needing to be told how it would have to be written. The member-access row says nothing about
     // it, and for a long time nothing did.
     Budget::ms("completion of a name", 12.0),
+    // The same list with the name half typed. The row above asks at the end of a name, and a
+    // list is asked for on every letter before that: fewer letters are held loosely by more of
+    // the project's names, each of which is scored. Measured on Symfony's 13 118 files over
+    // 22 039 names: p95 1.20 ms at the end and 1.48 ms halfway, so a quarter dearer and not a
+    // different order -- which is worth a row because the first guess, from one request timed
+    // through a server, was seven times that. See `docs/08-performance.md`.
+    Budget::ms("completion of half a name", 12.0),
     // The only budget that pays for a parse. It reads the buffer rather than the index, which
     // is what lets it answer before the project is indexed -- and what makes it the one row
     // whose cost grows with the size of a single file rather than with the project.

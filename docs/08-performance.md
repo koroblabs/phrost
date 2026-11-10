@@ -801,24 +801,40 @@ noise on both.
 
 ## A name completion's loose pass sorted thousands of matches to offer two hundred
 
-`phrost perf` asks completion after a `->`, so nothing in it has ever timed a _name_ being completed
--- and a name is what is typed most. Measured through `serve` with every name a file writes cut in
-half (Symfony, 13 118 files, 284 sites, the edit's own cost taken out by a cheap request first): p50
-3 ms, p95 13.9 ms, and every answer over 12 ms was a page of two hundred. Inside one, for `Coo`: 7.2
-ms finding the candidates against 1.1 ms writing two hundred rows. The prefix pass finds thirty
+Measured through `serve` with every name a file writes cut in half (Symfony, 13 118 files, 284
+sites, the edit's own cost taken out by a cheap request first): p50 3 ms and p95 13.9 ms at the
+client, 6.4-8.7 ms of it inside `completions()` for a page of two hundred. Inside one, for `Coo`:
+7.2 ms finding the candidates against 1.1 ms writing two hundred rows. The prefix pass finds thirty
 `Coo*` names, so the loose pass runs, and it held 3 364 names loosely, sorted all of them, and
 visited 196.
 
 The sort is the part nobody read. Best first is a total order -- score, then the shorter name, then
 the alphabet -- so a heap popped until the page is full hands back the same rows in the same order
 and orders nothing it does not offer. Over the 190 loose passes of that run: median 1.65 ms -> 1.20
-ms, mean 2.22 -> 1.61; `Date` 5.4 -> 3.8 ms, `Resp` 4.5 -> 3.2. The answers are the same list.
+ms, mean 2.22 -> 1.61; `Date` 5.4 -> 3.8 ms, `Resp` 4.5 -> 3.2. The answers are the same list: 1 000
+sites on Symfony and Laravel, 68 666 rows, byte for byte.
 
 What is left is the walk itself: one pass over every short name the project declares with a mask
-test each, then a score for what passes. Three letters are held by thousands of names and that is
-most of the 3-4 ms that remain. A first-letter index would cut it; it has not been needed, and the
-numbers above are from a virtual machine about three times slower than the laptop the budgets were
-set on.
+test each, then a score for what passes. A first-letter index would cut it; it has not been needed.
 
-The instrument is the note: a sweep that samples one kind of site says nothing about the others, and
-the commonest one was outside it.
+**This note first said `phrost perf` had never timed a name being completed. It has had the row
+since 0.1.0** -- `completion of a name`, asked at the end of every name a file writes -- and the
+claim was written from a reading of one function rather than from the table the command prints. On
+the reference project the row reads p95 0.73 ms and max 3.18 ms, and that is the number to believe
+about that project. Two things the row did not say, and both are smaller than the first version of
+this note made them:
+
+- **It asks with the name typed in full.** A list is asked for on every letter before that, and
+  fewer letters are held loosely by more names. `completion of half a name` is the row for it. On
+  the same checkout, 300 files and 22 039 names: p95 1.20 ms at the end, 1.48 ms halfway; max 3.09
+  and 4.11. A quarter dearer, not seven times.
+- **A sweep asks back to back over a warm index.** The same request through a server, after an edit
+  has re-lowered the file, read 6-9 ms where the loop reads one or two: the walk touches every name
+  the project holds, and what it costs is mostly whether they are in cache. The sweep cannot see
+  that and `serve` can; neither number is wrong, and a budget is set on the first.
+
+And one about the sampler, met on the way: the sweep opens the twenty _largest_ user files, and on
+Symfony those are `Emoji/Resources/data/emoji-*.php` -- arrays of data with no name and no `->` in
+them -- so every per-site row prints `not measured` and the command exits clean. `--files 300` is
+what reached code there. Same family as the `.phpstan/cache` blobs CLAUDE.md §8.2 records: a sampler
+that prefers the largest file prefers what nobody wrote.

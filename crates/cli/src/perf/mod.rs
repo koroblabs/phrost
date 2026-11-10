@@ -184,6 +184,7 @@ pub(crate) fn run(
     let mut signature_samples = Samples::new("signature help");
     let mut commit_samples = Samples::new("completion + commit");
     let mut name_samples = Samples::new("completion of a name");
+    let mut half_name_samples = Samples::new("completion of half a name");
     let mut folding_samples = Samples::new("folding ranges");
     let mut token_samples = Samples::new("semantic tokens");
     let mut outline_samples = Samples::new("document symbols");
@@ -323,6 +324,20 @@ pub(crate) fn run(
             let started = Instant::now();
             let list = completions(&view, name.end());
             name_samples.record(started.elapsed(), !list.items.is_empty(), &location);
+
+            // And with half of it typed, which is the other end of the same interaction and the
+            // dear one -- see the budget. The last segment's half, since that is the word being
+            // written; the text after the cursor is not read.
+            let written = &entry.text[usize::from(name.start())..usize::from(name.end())];
+            let last = written.rfind('\\').map_or(0, |separator| separator + 1);
+            let mut cut = last + ((written.len() - last) / 2).max(1);
+            while !written.is_char_boundary(cut) {
+                cut -= 1;
+            }
+            let half = name.start() + TextSize::try_from(cut).unwrap_or_default();
+            let started = Instant::now();
+            let list = completions(&view, half);
+            half_name_samples.record(started.elapsed(), !list.items.is_empty(), &location);
         }
 
         // Once per method the file declares, over the whole of its body: what a reader expanding a
@@ -570,6 +585,7 @@ pub(crate) fn run(
         &inlay_samples,
         &signature_samples,
         &name_samples,
+        &half_name_samples,
         &folding_samples,
         &token_samples,
         &outline_samples,
