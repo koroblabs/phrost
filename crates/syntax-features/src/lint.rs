@@ -207,6 +207,14 @@ const PREFERENCE_IN_A_FACTUAL_CATEGORY: &[&str] = &[
     // about a count. It needs PHP 8.2, so until the linter was told which PHP it reads it never
     // ran; this keeps that true of the editor's default and leaves the rule one name away.
     "sensitive-parameter",
+    // "Missing description in assert function", on every `assert()` written with one argument.
+    // `assert($entity instanceof NodeInterface);` is how PHP code says what a value is where a
+    // signature cannot, and `phrost-body` narrows through it by name -- the same position as the
+    // assignment above: the engine reads the line and this asked for it to be written otherwise.
+    // 555 findings on four frameworks' own source, 494 of them in Drupal core, where half of the
+    // 616 `assert(` lines are an `instanceof` and none carries a description. A house rule about
+    // failure messages, filed under correctness.
+    "assert-description",
 ];
 
 impl LintSelection<'_> {
@@ -717,6 +725,10 @@ mod version_gated_rules_tests;
 #[cfg(test)]
 #[path = "lint/strict_behavior.rs"]
 mod strict_behavior_tests;
+
+#[cfg(test)]
+#[path = "lint/assert_description.rs"]
+mod assert_description_tests;
 
 #[cfg(test)]
 mod tests {
