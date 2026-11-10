@@ -488,3 +488,40 @@ function run(): void
         "#]],
     );
 }
+
+/// The same rule without an import: a file in no namespace means the global class by the bare
+/// name, and a project's own class of that name in a namespace is the one that has to be written
+/// out. The project's row used to come first for being the project's.
+#[test]
+fn of_two_classes_with_one_name_the_one_the_namespace_means_leads() {
+    check(
+        r#"
+//- /src/Alpha/Failure.php
+<?php
+namespace App\Alpha;
+
+class Failure {}
+
+//- /src/Zeta/Failure.php
+<?php
+
+class Failure {}
+
+//- /script.php
+<?php
+
+throw new Fail@here@;
+"#,
+        &[Query::completion(
+            "a name the file's namespace settles",
+            "here",
+        )],
+        expect![[r#"
+            a name the file's namespace settles
+            - Failure [class]  Failure
+            - Failure [class]  App\Alpha\Failure  insert `\App\Alpha\Failure`
+            - ... and the client must ask again
+            - accepting the first leaves `throw new Failure;`
+        "#]],
+    );
+}

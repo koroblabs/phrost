@@ -177,36 +177,14 @@ impl IndexView<'_> {
     /// offered nothing there. Only a name the import resolves: an alias of something the index does
     /// not hold is a name nothing could be said about.
     pub fn aliases_matching(&self, typed: &str, kinds: crate::NameKinds) -> Vec<AliasCandidate> {
-        self.bound_by_import(typed, kinds, true)
-    }
-
-    /// The declarations this file imports under their own names, where the name matches what was
-    /// typed and the place can take it.
-    ///
-    /// The other half of [`Self::aliases_matching`], and what the catalog cannot say about its own
-    /// rows: *which* class the file means by a name several declare. `RuntimeException` is PHP's
-    /// and the MongoDB extension's; a file that writes `use RuntimeException;` has chosen, and
-    /// among the two rows for `new RuntimeE` the one it did not choose stood first -- they were
-    /// ordered by where each is declared, and `mongodb.php` sorts before `spl.php`.
-    pub fn imported_as_written(&self, typed: &str, kinds: crate::NameKinds) -> Vec<AliasCandidate> {
-        self.bound_by_import(typed, kinds, false)
-    }
-
-    /// The names an import of this file binds, by whether they were bound with `as`.
-    fn bound_by_import(
-        &self,
-        typed: &str,
-        kinds: crate::NameKinds,
-        aliased: bool,
-    ) -> Vec<AliasCandidate> {
         let Some(open) = self.current() else {
             return Vec::new();
         };
         open.hir()
             .imports()
-            .filter(|(_, import)| import.alias.is_some() == aliased)
             .filter_map(|(_, import)| {
-                if !phrost_model::matches_loosely(import.local.as_str(), typed) {
+                let alias = import.alias.as_ref()?;
+                if !phrost_model::matches_loosely(alias.as_str(), typed) {
                     return None;
                 }
                 let path = import.path.as_str().trim_start_matches('\\');
@@ -216,7 +194,7 @@ impl IndexView<'_> {
                     ImportKind::Constant => self.constant_location(path),
                 }?;
                 kinds.accepts(located.kind).then(|| AliasCandidate {
-                    name: import.local.clone(),
+                    name: alias.clone(),
                     fqn: located.fqn,
                     kind: located.kind,
                 })

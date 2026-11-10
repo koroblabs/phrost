@@ -53,48 +53,7 @@ pub(super) fn names(
         );
     }
     let aliases = aliases_offered(view, prefix, place);
-    // Of several declarations sharing one short name, the one this file imports stands first among
-    // them. The catalog orders namesakes by where each is declared, which says nothing about which
-    // is meant -- and the file has said: `new RuntimeE` under `use RuntimeException;` offered the
-    // MongoDB extension's class ahead of PHP's and wrote its whole path on accept, because
-    // `mongodb.php` sorts before `spl.php`.
-    //
-    // Among its namesakes and no further. Where a name stands against *other* names is the
-    // ranking's -- the project's own first, then by name -- and an import does not outrank a class
-    // of the file's own namespace. And by symbol table: `use function Termwind\terminal;` says
-    // nothing about the class `Termwind\Terminal`, which differs from it only by case.
-    let imported = match prefix.contains('\\') {
-        true => Vec::new(),
-        false => view.imported_as_written(prefix, place.kinds()),
-    };
-    let mut candidates = candidates;
-    for bound in &imported {
-        let slots: Vec<usize> = candidates
-            .iter()
-            .enumerate()
-            .filter(|(_, candidate)| {
-                import_kind_of(candidate.kind) == import_kind_of(bound.kind)
-                    && candidate
-                        .short()
-                        .eq_ignore_ascii_case(short_name(bound.fqn.as_str()))
-            })
-            .map(|(at, _)| at)
-            .collect();
-        let Some(held) = slots.iter().position(|&at| {
-            candidates[at]
-                .fqn
-                .as_str()
-                .eq_ignore_ascii_case(bound.fqn.as_str())
-        }) else {
-            // The page was too full to hold it, and it is left out as it was.
-            continue;
-        };
-        // Up to the first slot its namesakes hold, each of them moving down one.
-        for slot in (0..held).rev() {
-            candidates.swap(slots[slot], slots[slot + 1]);
-        }
-    }
-    let classes = candidates
+    let mut classes: Vec<(bool, CompletionItem)> = candidates
         .into_iter()
         // `__INTERNAL_DO_NOT_USE__StringBackedEnum` and its `Int` sibling are interfaces a stub
         // declares on purpose and that PHP never asks anyone to write. See
@@ -110,7 +69,10 @@ pub(super) fn names(
                 Some(head) => (format!("{head}{}", candidate.short()), None),
                 None => written_form(view, offset, fqn, candidate.kind, spelling),
             };
-            CompletionItem {
+            // Whether the bare name already means this declaration here: it is written short and
+            // needs no `use` line.
+            let meant = import.is_none() && insert == candidate.short();
+            let item = CompletionItem {
                 demoted: false,
                 deprecated: candidate.deprecated,
                 label: candidate.short().to_owned(),
@@ -126,8 +88,37 @@ pub(super) fn names(
                 insert: Some(Insertion::plain(insert)),
                 call: None,
                 import,
-            }
-        });
+            };
+            (meant, item)
+        })
+        .collect();
+    // Of several declarations sharing one short name, the one the name already means here stands
+    // first among them. The catalog orders namesakes by origin and then by where each is declared,
+    // which says nothing about which is meant -- and the file has said, by an import or by the
+    // namespace it is in. `new RuntimeE` under `use RuntimeException;` offered the MongoDB
+    // extension's class ahead of PHP's and wrote its whole path on accept, because `mongodb.php`
+    // sorts before `spl.php`; a script with no namespace was offered a project's own
+    // `...\Exception\Exception` ahead of the `Exception` it had been writing.
+    //
+    // Among its namesakes and no further: where a name stands against *other* names is the
+    // ranking's. And by symbol table, since a function and a class may share a name.
+    for at in 0..classes.len() {
+        if !classes[at].0 {
+            continue;
+        }
+        let slots: Vec<usize> = (0..=at)
+            .filter(|&other| {
+                let (namesake, meant) = (&classes[other].1, &classes[at].1);
+                import_kind_of(namesake.kind) == import_kind_of(meant.kind)
+                    && namesake.label.eq_ignore_ascii_case(&meant.label)
+            })
+            .collect();
+        // Up to the first place its namesakes hold, each of them moving down one.
+        for slot in (0..slots.len() - 1).rev() {
+            classes.swap(slots[slot], slots[slot + 1]);
+        }
+    }
+    let classes = classes.into_iter().map(|(_, item)| item);
     // Which comes first is what each place is written with. Code names a class by importing it, so
     // a fully-qualified path there is rare and the class of the same name is what is meant -- on the
     // reference project `\Drupal::` is written 269 times in code and `\Drupal\...` 3. A docblock
