@@ -877,15 +877,20 @@ green and prove nothing — three of them nearly shipped as coverage in a single
   86.3 %, between Mago (87.1) and Psalm (81.5), PHPStan at 93.6 and phpantom at 93.2.
 - A fourteenth, for "would an editor show it, and does accepting it write it":
   `python3 tools/a-half-typed-name-is-shown-and-accepted.py <project> [--files 40] [--limit 600]`
-  cuts every name a file writes in half, sends the buffer that way and asks completion at the cut.
-  Three questions the code itself answers: whether the name is offered, whether a client keeps it --
-  by the _word_ at the cursor (Zed, whose PHP counts `$` in one) and by the text the edit _replaces_
-  (VS Code and what follows it) -- and whether applying the edit writes what was there. Every other
+  cuts every name a file writes in half, sends the buffer that way and asks completion at the cut:
+  variables, members, functions and `new`, and every place a class is named -- a type in a
+  signature, `extends`, `catch`, `instanceof`, the receiver of a `::`, a `use` line, an attribute, a
+  docblock's type tag. Three questions the code itself answers: whether the name is offered, whether
+  a client keeps it -- by the _word_ at the cursor (Zed, whose PHP counts `$` in one) and by the
+  text the edit _replaces_ (VS Code and what follows it) -- and whether applying the edit writes
+  what was there without a second `use` line for a name the file already holds. Every other
   completion tool asks with the file whole and reads labels, so none could see a list the server
   answered and the editor emptied: `$ap` sent as `filterText: "app"` hid every variable in Zed for
-  three releases. Its first runs also found `use ($al` accepted as `use ($$alpha)`, and the MongoDB
-  extension's `RuntimeException` offered ahead of the one the file imports. An in-process test
-  cannot see any of this -- what a client does with an answer is about the client.
+  three releases. `--server <binary>` asks another build, which is the control: against the released
+  0.1.2 on Symfony it reports 121 names hidden by the word, 49 `use` paths hidden by the range, 10
+  second `use` lines and 3 names written as something else, and against 0.1.3 none. It found all of
+  those, and the page of two hundred names that did not hold the one the file had imported. An
+  in-process test cannot see any of this -- what a client does with an answer is about the client.
 - A seventh, and the only one that cannot be argued with: **`php` itself is on this machine**
   (8.5.10). For any question about what the _language_ does -- what an error says, which write PHP
   refuses, whether a hook makes a property backed -- write four lines into the scratchpad and run

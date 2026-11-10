@@ -3,11 +3,15 @@
 
     python3 tools/a-half-typed-name-is-shown-and-accepted.py <project-root> [--files 40]
                                                                [--limit 600] [--verbose]
+                                                               [--server <binary>]
 
 Every name a file already writes is cut in half, the buffer is sent that way, and completion is
 asked at the cut -- which is what an editor does on every keystroke, and what no other tool here
-does: `completion-offers-what-is-written` asks right after the `->` with the file whole. Three
-questions, and none needs an expectation written down, because the code says what the answer is:
+does: `completion-offers-what-is-written` asks right after the `->` with the file whole. Variables,
+members, functions and `new`; and every place a class is named -- a type in a signature, `extends`,
+`catch`, `instanceof`, the receiver of a `::`, a `use` line, an attribute, a docblock's type tag.
+Three questions, and none needs an expectation written down, because the code says what the answer
+is:
 
 * **offered** -- the written name is among the items. Counted, and not judged: a local at the
   place it is first bound and a method on a receiver nothing can type are not offered and should
@@ -18,12 +22,18 @@ questions, and none needs an expectation written down, because the code says wha
   from a list the server had answered correctly, for every variable, in three releases.
 * **accepted** -- applying the item's edit to the half-typed line writes the name that was there.
   A range that leaves the typed `$` standing writes `use ($$alpha)`; one that stops short of a
-  namespace writes it twice.
+  namespace writes it twice. And the `use` line an item brings with it is not a second one for a
+  name the file has already bound.
 
 The second is reported under two rules, because clients differ and the server cannot ask which it
 is talking to: by the word (Zed), and by the text of the range the edit replaces (VS Code, and the
 completion plugins that follow it). An item the first rule drops is a bug in an editor this project
 ships an extension for. One only the second drops is recorded and listed apart.
+
+A docblock is the one place two spellings are both right -- `\\App\\Node` in a project that
+roots its names and `Node` in one that does not -- and the server follows the file's own. So a
+docblock name written otherwise than the file had it is counted and listed apart: the first class
+a file's docblocks name has nothing to follow, and comes back rooted.
 
 Only what is offered is judged, so a miss here is completion's own and not a type the project
 failed to state. And only the declaration the file means: where a `use` line names the class and
@@ -104,7 +114,7 @@ def plain(snippet):
 
 
 class Session:
-    def __init__(self, root):
+    def __init__(self, root, binary=None):
         self.root = os.path.abspath(root)
         self.ready = None
         self.working = set()
@@ -112,7 +122,7 @@ class Session:
         os.makedirs(os.path.join(REPO, ".phrost-cache"), exist_ok=True)
         self.server = Server(
             "phrost",
-            [os.path.join(REPO, "target/release/phrost"), "serve"],
+            [binary or os.path.join(REPO, "target/release/phrost"), "serve"],
             self.root,
             log=os.path.join(REPO, ".phrost-cache", "half-typed.stderr.log"),
         )
@@ -196,6 +206,41 @@ def written_names(text, masked):
     return found
 
 
+# Where a class is named, by what stands before it. The last segment is what is cut; the path as
+# written says which declaration is meant.
+CLASS_NAME = r"\\?(?:[A-Za-z_]\w*\\)*[A-Z]\w*"
+NAMED = [
+    ("type", re.compile(r"[(,]\s*(?:(?:public|protected|private|readonly)\s+)*\??(" + CLASS_NAME + r")\s+(?:&|\.\.\.)?\$")),
+    ("type", re.compile(r"\)\s*:\s*\??(" + CLASS_NAME + r")")),
+    ("type", re.compile(r"\b(?:public|protected|private)\s+(?:(?:static|readonly)\s+)*\??(" + CLASS_NAME + r")\s+\$")),
+    ("header", re.compile(r"\b(?:extends|implements)\s+(" + CLASS_NAME + r")")),
+    ("catch", re.compile(r"\bcatch\s*\(\s*(" + CLASS_NAME + r")")),
+    ("instanceof", re.compile(r"\binstanceof\s+(" + CLASS_NAME + r")")),
+    ("receiver", re.compile(r"(?<![\w$\\>:])(" + CLASS_NAME + r")::")),
+    ("use", re.compile(r"^use\s+(" + CLASS_NAME + r")\s*;", re.M)),
+    ("attribute", re.compile(r"#\[\s*(" + CLASS_NAME + r")")),
+]
+# In the text itself: a comment is blank in the masked copy.
+DOCUMENTED = re.compile(r"^[ \t]*\*[ \t]*@(?:param|return|var|throws)[ \t]+\??(" + CLASS_NAME + r")", re.M)
+NAME_KINDS = ("type", "header", "catch", "instanceof", "receiver", "use", "attribute", "doc")
+
+
+def named_classes(text, masked):
+    """Each class a file names outside a `new`: the kind of place, where its last segment starts
+    and ends, that segment, and the whole path as written."""
+    found = []
+    spans = [(kind, match) for kind, pattern in NAMED for match in pattern.finditer(masked)]
+    spans += [("doc", match) for match in DOCUMENTED.finditer(text)]
+    for kind, match in spans:
+        path = match.group(1)
+        last = path.rsplit("\\", 1)[-1]
+        if len(last) < 4:
+            continue
+        end = match.end(1)
+        found.append((kind, end - len(last), end, last, path))
+    return found
+
+
 IMPORT = re.compile(r"^use\s+(?:function\s+|const\s+)?\\?([\w\\]+?)(?:\s+as\s+(\w+))?\s*;", re.M)
 
 
@@ -220,6 +265,8 @@ def main():
     parser.add_argument("--files", type=int, default=40)
     parser.add_argument("--needle", default="")
     parser.add_argument("--verbose", action="store_true")
+    # Another build, to see what an older one answers: the control an instrument needs.
+    parser.add_argument("--server", default=None)
     args = parser.parse_args()
 
     paths = compare.php_files(args.root, args.needle, args.files)
@@ -232,27 +279,33 @@ def main():
         print("no class declared in the sample to probe readiness with")
         return 1
 
-    session = Session(args.root)
+    session = Session(args.root, args.server and os.path.abspath(args.server))
     print(f"starting server over {args.root}", flush=True)
     if not session.start(probe[0], probe[1], texts[probe[0]]):
         print("server never answered about the project")
         return 1
 
-    sites = []
+    sites, classes = [], []
     for path, text in texts.items():
-        for kind, start, end, name in written_names(text, compare.mask(text)):
-            sites.append((path, kind, start, end, name))
-    sites = compare.stride(sites, args.limit)
+        masked = compare.mask(text)
+        for kind, start, end, name in written_names(text, masked):
+            sites.append((path, kind, start, end, name, name))
+        for kind, start, end, name, written in named_classes(text, masked):
+            classes.append((path, kind, start, end, name, written))
+    # Sampled apart, or the variables -- most of any file -- would be most of every run.
+    sites = compare.stride(sites, args.limit) + compare.stride(classes, args.limit // 2)
 
     asked = Counter()
     offered = Counter()
     dropped_by_word = defaultdict(list)
     dropped_by_range = defaultdict(list)
     miswritten = defaultdict(list)
+    respelled = defaultdict(list)
+    imported_twice = defaultdict(list)
 
     imports = {path: imports_of(text) for path, text in texts.items()}
 
-    for path, kind, start, end, name in sites:
+    for path, kind, start, end, name, written in sites:
         text = texts[path]
         sigil = 1 if name.startswith("$") else 0
         keep = sigil + max(1, (len(name) - sigil) // 2)
@@ -267,11 +320,29 @@ def main():
         items = (result.get("items") if isinstance(result, dict) else result) or []
         bare = name.lstrip("$")
         hits = [item for item in items if name in label_names(item) or bare in label_names(item)]
-        # The class the file's own `use` line names, where it names one: any other row with the
-        # label is a namesake.
-        imported = imports[path].get(bare.lower()) if kind == "new" else None
-        if imported:
-            hits = [item for item in hits if (item.get("detail") or "").lstrip("\\") == imported]
+        declared = lambda item: (item.get("detail") or item.get("label") or "").lstrip("\\").lower()
+        # Any row with the label, the namesakes included: a `use` line added for a name the file
+        # has already bound to something else is one PHP refuses to load.
+        for item in hits:
+            for extra in item.get("additionalTextEdits") or []:
+                for local, added in imports_of((extra.get("newText") or "").strip()).items():
+                    held = imports[path].get(local)
+                    if held and held.lower() != added.lower():
+                        imported_twice[kind].append(
+                            f"{os.path.relpath(path, args.root)}:{position['line'] + 1}  "
+                            f"`use {held};` is there and accepting adds `use {added};`"
+                        )
+        if kind == "use":
+            # A `use` line's rows are labelled with the whole path, and the line names one.
+            hits = [item for item in items if declared(item) == written.lstrip("\\").lower()]
+        elif kind == "new" or kind in NAME_KINDS:
+            # The class the file's own `use` line names, where it names one, and the path where
+            # one is written: any other row with the label is a namesake.
+            imported = imports[path].get(bare.lower())
+            if "\\" in written.lstrip("\\"):
+                hits = [item for item in hits if declared(item).endswith(written.lstrip("\\").lower())]
+            elif imported:
+                hits = [item for item in hits if declared(item) == imported.lower()]
         if not hits:
             continue
         offered[kind] += 1
@@ -307,14 +378,16 @@ def main():
             name_column = start - line_start
             was = text[line_start:end]
             if not after.startswith(was):
-                miswritten[kind].append(f"{where}  {line.strip()!r} -> {after.strip()!r}")
+                # A docblock has two right spellings; see the top of this file.
+                bucket = respelled if kind == "doc" else miswritten
+                bucket[kind].append(f"{where}  {line.strip()[:90]!r} -> {after.strip()[:120]!r}")
 
     session.server.stop()
 
     total = sum(asked.values())
     print(f"\nasked at {total} half-typed names over {len(paths)} files")
     print(f"{'kind':<10}{'asked':>7}{'offered':>9}{'hidden (word)':>15}{'hidden (range)':>16}{'miswritten':>12}")
-    for kind in KINDS:
+    for kind in KINDS + NAME_KINDS:
         if not asked[kind]:
             continue
         print(
@@ -326,7 +399,9 @@ def main():
     for title, found, fatal in (
         ("offered and hidden by a client that filters by the word (Zed)", dropped_by_word, True),
         ("accepting does not write what was there", miswritten, True),
+        ("accepting adds a `use` for a name the file already holds", imported_twice, True),
         ("offered and hidden by a client that filters by the replaced range", dropped_by_range, False),
+        ("a docblock name written otherwise than the file had it", respelled, False),
     ):
         count = sum(len(rows) for rows in found.values())
         if not count:
