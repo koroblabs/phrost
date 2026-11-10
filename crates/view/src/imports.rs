@@ -41,7 +41,38 @@ impl IndexView<'_> {
         {
             return None;
         }
+        // And anything a `use` line already binds it to, declared or not. An import of a class the
+        // index cannot see -- a dependency not installed, an extension with no stub -- resolves to
+        // nothing above and still owns the name: a second line for it is PHP's "cannot use ...
+        // because the name is already in use", a fatal error for the whole file. Measured on
+        // Symfony's own source with no `vendor/`: `extends Test|` under
+        // `use PHPUnit\Framework\TestCase;` offered the framework bundle's `TestCase` with a
+        // second `use` line for it, at eight of twenty-one `extends` sites.
+        if self.binds_by_import(offset, short, kind) {
+            return None;
+        }
         self.import_placement(offset, fqn, kind)
+    }
+
+    /// Whether a `use` line in the namespace at `offset` binds `local` in the table `kind` names.
+    ///
+    /// By the line and not by what it resolves to: the name is taken as soon as it is written.
+    fn binds_by_import(&self, offset: TextSize, local: &str, kind: ImportKind) -> bool {
+        let Some(open) = self.current() else {
+            return false;
+        };
+        let hir = open.hir();
+        let namespace = hir.namespace_at(offset);
+        hir.imports()
+            .filter(|(_, import)| import.namespace == namespace && import.kind == kind)
+            .any(|(_, import)| match kind {
+                // Classes and functions are named without regard to case, and so is what a `use`
+                // line binds them to.
+                ImportKind::ClassLike | ImportKind::Function => {
+                    import.local.as_str().eq_ignore_ascii_case(local)
+                }
+                ImportKind::Constant => import.local.as_str() == local,
+            })
     }
 
     /// The same line, placed, without asking whether the file needs one.

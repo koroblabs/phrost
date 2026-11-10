@@ -525,3 +525,39 @@ throw new Fail@here@;
         "#]],
     );
 }
+
+/// A `use` line owns its name whether or not anything declares what it names. The class here is in
+/// a dependency that was never installed, so the bare name resolves to nothing -- and a second
+/// `use` for a namesake is PHP's "cannot use ... because the name is already in use", which stops
+/// the whole file. The namesake is written out in full instead, as it is beside an import the
+/// index can see.
+#[test]
+fn a_name_an_import_of_something_undeclared_holds_is_not_imported_again() {
+    check(
+        r#"
+//- /src/Alpha/Failure.php
+<?php
+namespace App\Alpha;
+
+class Failure {}
+
+//- /src/Job.php
+<?php
+namespace App;
+
+use Vendor\NotInstalled\Failure;
+
+function run(): void
+{
+    throw new Fail@here@;
+}
+"#,
+        &[Query::completion("a name an import already holds", "here")],
+        expect![[r#"
+            a name an import already holds
+            - Failure [class]  App\Alpha\Failure  insert `\App\Alpha\Failure`
+            - ... and the client must ask again
+            - accepting the first leaves `throw new \App\Alpha\Failure;`
+        "#]],
+    );
+}

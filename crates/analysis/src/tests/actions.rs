@@ -182,6 +182,42 @@ class Caller
     );
 }
 
+/// A name a `use` line already holds cannot be imported from somewhere else, even when the index
+/// has never seen what that line names -- a dependency not installed. The fix for that is to the
+/// line, and a second `use` for the same name is a fatal error.
+#[test]
+fn a_name_held_by_an_import_of_something_undeclared_offers_no_second_import() {
+    check(
+        r#"
+//- /src/Entity/Node.php
+<?php
+namespace App\Entity;
+
+class Node {}
+
+//- /src/Caller.php
+<?php
+namespace App;
+
+use Vendor\NotInstalled\Node;
+
+class Caller
+{
+    public function run(): void
+    {
+        $thing = new No@here@de();
+    }
+}
+"#,
+        "here",
+        expect![[r#"
+            - Extract $node
+                leaves `$thing = new Node();`
+                leaves `$thing = $node;`
+        "#]],
+    );
+}
+
 #[test]
 fn a_receiver_that_may_be_null_offers_the_nullsafe_operator() {
     check(
