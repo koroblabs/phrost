@@ -3,6 +3,12 @@
 A release's section is its notes on GitHub: the release workflow publishes the section whose heading
 names the tag's version.
 
+## Unreleased
+
+- `setrawcookie()` takes its options array: `setrawcookie($name, $value, ['expires' => $at])` was
+  reported as an array given for an `int`, because the stubs declared the function's two forms
+  separately and only the first was read.
+
 ## 0.1.2
 
 **The linter**

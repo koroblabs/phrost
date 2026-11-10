@@ -111,3 +111,61 @@ fn the_set_as_published_still_declares_these_twice() {
     "#]]
     .assert_eq(&found);
 }
+
+/// Every top-level function a file declares more than once, by namespace and name.
+fn functions_declared_twice(text: &str) -> Vec<String> {
+    let mut interner = Interner::new();
+    let lowered = phrost_lower::lower_text_with_bodies(
+        &mut interner,
+        FileId::from_raw(0),
+        text,
+        &phrost_lower::KeyedAttributes::default(),
+    );
+    let hir = &lowered.hir;
+
+    let mut counts: BTreeMap<(String, String), usize> = BTreeMap::new();
+    for (_, function) in hir.functions() {
+        *counts
+            .entry((
+                format!("{:?}", function.namespace),
+                function.name.as_str().to_ascii_lowercase(),
+            ))
+            .or_default() += 1;
+    }
+    counts
+        .into_iter()
+        .filter(|(_, times)| *times > 1)
+        .map(|((_, name), times)| format!("{name} x{times}"))
+        .collect()
+}
+
+/// The functions the set still declares twice, which is every one the published set does but
+/// `setrawcookie`.
+///
+/// That one was two real forms -- the seven positional parameters, and a name, a value and an
+/// array of options -- and the first is what a call is read against, so the options form was
+/// reported as an array handed to an `int`. It is one declaration now, `array|int` in the third
+/// position, which is how the set already writes `setcookie`.
+///
+/// The five left are the generator repeating itself rather than an overload: three are the same
+/// signature twice, and for `pg_jit` and `ldap_exop_sync` the first copy is the one PHP documents
+/// and the one that is read. They cost nothing in use, so they are listed rather than edited --
+/// and a sixth appearing, or `setrawcookie` coming back, moves this.
+#[test]
+fn the_functions_the_set_still_declares_twice_are_these() {
+    let mut found = String::new();
+    for (name, contents) in PRELUDE {
+        for twice in functions_declared_twice(contents) {
+            found.push_str(&format!("{name}: {twice}\n"));
+        }
+    }
+
+    expect![[r#"
+        ldap.php: ldap_exop_sync x2
+        pgsql.php: pg_change_password x2
+        pgsql.php: pg_jit x2
+        pgsql.php: pg_result_memory_size x2
+        pgsql.php: pg_socket_poll x2
+    "#]]
+    .assert_eq(&found);
+}

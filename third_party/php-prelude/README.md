@@ -21,7 +21,7 @@ found the normal state.
 that what this project changed is an artifact rather than a memory:
 
 ```
-just stubs-diff     the whole local delta -- 9 869 lines across 31 files
+just stubs-diff     the whole local delta -- 9 865 lines across 31 files
 just stubs-accept   re-record it after a deliberate edit
 ```
 
@@ -184,6 +184,25 @@ like a stub that does not work, and only a sentence can say which.
   apart. `no_class_in_the_set_declares_one_method_twice` counts them back to zero, and its
   neighbour lists what the published set still declares twice, so a fold upstream takes shows up
   as one this set can stop carrying. **Worth reporting upstream.**
+
+  `setrawcookie()` is the same defect at the top level and was found by asking the same question of
+  functions (`standard.php`). Its two forms -- seven positional parameters, or a name, a value and
+  an array of options -- were two declarations, the first is the one a call is read against, and so
+  `setrawcookie($name, $value, ['expires' => $at])` was an array handed to an `int`. It is one
+  declaration with `array|int` in the third position, which is how the set already writes
+  `setcookie()`. Five more functions are declared twice and are left: `pg_socket_poll`,
+  `pg_result_memory_size` and `pg_change_password` are the same signature repeated, and for `pg_jit`
+  and `ldap_exop_sync` the first copy is the one PHP documents and the one that is read. They cost
+  nothing in use, and `the_functions_the_set_still_declares_twice_are_these` lists them so that a
+  sixth, or `setrawcookie` coming back, is seen.
+
+  What none of this is: a choice the set made and the index ignored. Nothing on either copy of any
+  of these says when it applies -- no attribute, no comment -- and what decides it for Imagick is the
+  version of a *library*, which the set's own version attributes (`Mago\AvailableSince` and its nine
+  siblings, each taking a PHP version) could not say if they were there. Those attributes are a
+  separate matter and a real gap: the set writes `AvailableSince` 298 times and `AvailableUntil`
+  once, and nothing here reads either, so a function PHP 8.4 added is known to a project that
+  requires 8.1.
 
 - `DateInterval`'s eleven properties lost their `readonly` modifier (`date.php`). PHP declares none
   of them readonly: `$interval->invert = 1;` is how a negative interval is built by hand, and

@@ -4152,7 +4152,7 @@ function setcookie(
  * being URL-encoded, so the caller is responsible for encoding it if that is needed.
  *
  * @param string $value
- * @param int $expires_or_options
+ * @param array|int $expires_or_options
  * @param string $path
  * @param string $domain
  * @param bool $secure
@@ -4167,14 +4167,6 @@ function setrawcookie(
     $secure = false,
     $httponly = false,
 ): bool {}
-
-/**
- * Sends a cookie exactly like setcookie, except $value is sent to the browser as-is rather than
- * being URL-encoded, so the caller is responsible for encoding it if that is needed.
- *
- * @param string $value
- */
-function setrawcookie(string $name, $value = '', array $options = []): bool {}
 
 /**
  * Sends a raw HTTP header to the client. Must be called before any output is produced, or it has no

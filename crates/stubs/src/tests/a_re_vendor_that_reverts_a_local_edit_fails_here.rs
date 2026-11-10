@@ -114,7 +114,7 @@ fn the_local_delta_is_the_one_that_was_recorded() {
         simple-xml.php +171 -0
         spl.php +1388 -1
         sqlite3.php +121 -0
-        standard.php +2396 -8
+        standard.php +2392 -12
         tokenizer.php +42 -0
         xml.php +92 -0
         xmlreader.php +143 -3
@@ -123,7 +123,7 @@ fn the_local_delta_is_the_one_that_was_recorded() {
         zlib.php +138 -0
         swoole.php is in upstream and not in the vendored set
 
-        31 files differ, 9869 lines ours
+        31 files differ, 9865 lines ours
     "#]]
     .assert_eq(&rendered);
 }
