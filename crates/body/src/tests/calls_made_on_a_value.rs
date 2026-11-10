@@ -32,6 +32,7 @@ fn calls_on(source: &str, variable: &str, leaves_receiver: &dyn Fn(&str) -> bool
         &subject,
         index.statements(&subject),
         leaves_receiver,
+        &|_| true,
     );
     let lines = found
         .iter()

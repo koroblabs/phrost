@@ -169,6 +169,7 @@ mod assert_narrows_a_stepped_receiver;
 mod callable_return;
 mod callbacks_in_a_chain;
 mod calls;
+mod calls_that_say_something;
 mod candidates;
 mod catalog_cursor;
 mod class_string_new;

@@ -85,7 +85,7 @@ pub use self::{
     },
     narrowing::{
         Callee, PassedAs, PassedPaths, PassedTo, narrowed_at, narrowed_this, passed_by_reference,
-        passed_to_any_call, passed_to_calls,
+        passed_by_statement, passed_to_any_call, passed_to_calls,
     },
     object_context::{OutOfContext, Written, out_of_context},
     occurrences::visit_every_expression,

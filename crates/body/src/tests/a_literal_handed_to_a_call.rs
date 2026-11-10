@@ -37,9 +37,14 @@ fn handed_to(subject: impl Fn(&mut Interner) -> ValuePath) -> String {
     let subject = subject(&mut interner);
     let hir = &lowered.hir;
     let index = PassedPaths::of(hir, &|_| false);
-    let found = passed_to_calls(hir, offset, &subject, index.statements(&subject), &|_| {
-        false
-    });
+    let found = passed_to_calls(
+        hir,
+        offset,
+        &subject,
+        index.statements(&subject),
+        &|_| false,
+        &|_| true,
+    );
     let lines = found
         .iter()
         .map(|call| match &call.callee {

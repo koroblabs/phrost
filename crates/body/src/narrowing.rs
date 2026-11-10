@@ -1129,12 +1129,20 @@ pub fn passed_to_any_call(hir: &FileHir, offset: TextSize, subject: &ValuePath) 
 /// `among` is the statements [`PassedPaths::statements`] said may pass `subject`, sorted: the walk
 /// still decides which of them precede the position, and only they are read. `leaves_receiver` is
 /// the name filter the index was built with, and says which calls made *on* `subject` count.
+///
+/// `speaks` is asked of a statement that precedes the position, before anything else is read off
+/// it: whether its callee has anything to say about the value at all. Only of those, and that
+/// is the point of asking it here rather than of every statement the index holds -- answering it
+/// resolves the callee, which for a method resolves its receiver *where the call was written*, so
+/// asked of a statement at or after the position it comes back to this walk for the same value
+/// and stops only when the follow budget does.
 pub fn passed_to_calls(
     hir: &FileHir,
     offset: TextSize,
     subject: &ValuePath,
     among: &[StmtId],
     leaves_receiver: &dyn Fn(&str) -> bool,
+    speaks: &dyn Fn(StmtId) -> bool,
 ) -> Vec<PassedTo> {
     let mut checks = Vec::new();
     if among.is_empty() {
@@ -1152,7 +1160,7 @@ pub fn passed_to_calls(
             // than believing one that may not have run.
             &|_, _| false,
             &mut |hir, statement| {
-                if among.binary_search(&statement).is_err() {
+                if among.binary_search(&statement).is_err() || !speaks(statement) {
                     return;
                 }
                 let StmtData::Expr { expr, .. } = hir.stmt(statement) else {
@@ -1177,6 +1185,24 @@ pub fn passed_to_calls(
         );
     }
 
+    checks
+}
+
+/// What one statement's call was handed `subject` as: the entries [`passed_to_calls`] collects from
+/// it, without asking whether it precedes anything.
+///
+/// For a reader that settles something about a statement once -- whether its callee says anything
+/// about the value at all -- rather than once per position that reads the value.
+pub fn passed_by_statement(
+    hir: &FileHir,
+    statement: StmtId,
+    subject: &ValuePath,
+    leaves_receiver: &dyn Fn(&str) -> bool,
+) -> Vec<PassedTo> {
+    let mut checks = Vec::new();
+    if let StmtData::Expr { expr, .. } = hir.stmt(statement) {
+        collect_passed(hir, *expr, subject, leaves_receiver, &mut checks);
+    }
     checks
 }
 

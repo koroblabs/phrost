@@ -27,6 +27,13 @@ pub(crate) enum Contracts {
 pub(crate) type ResolvedPaths =
     FxHashMap<(TextSize, u8), Vec<(phrost_body::ValuePath, (Option<Held>, bool))>>;
 
+/// Whether each statement's callee says anything about a path the statement hands it.
+///
+/// By statement and budget first and the path second, as [`ResolvedPaths`] is and for its reason:
+/// one statement hands over a path or two, so the lookup compares rather than hashing a clone.
+pub(crate) type SpeakingStatements =
+    FxHashMap<(phrost_hir::StmtId, u8), Vec<(phrost_body::ValuePath, bool)>>;
+
 /// What a call's callee takes, and the templates its receiver supplied, keyed by where it is written.
 pub(crate) type CallParameters = FxHashMap<
     (phrost_model::TextRange, phrost_model::TextRange),
@@ -166,6 +173,10 @@ pub struct IndexView<'a> {
     /// Which statement calls in the current file pass which path -- see
     /// `phrost_body::PassedPaths`. Syntax, so the contracts-lifted twin keeps it.
     pub(crate) passed_paths: RefCell<Option<Arc<phrost_body::PassedPaths>>>,
+    /// Whether a statement's callee says anything about a path it was handed, for each statement
+    /// asked so far -- see `IndexView::passed_to_calls`. What a callee says is a contract and is
+    /// found through a receiver, so not carried into the contracts-lifted twin.
+    pub(crate) speaking_statements: RefCell<SpeakingStatements>,
     /// What each statement and guard proved about a value, for the narrowing walk -- see
     /// `phrost_body::ProvedMemo`. Not carried into the contracts-lifted twin: its "never" resolves
     /// through a different world.
@@ -236,6 +247,7 @@ impl<'a> IndexView<'a> {
             calls: RefCell::default(),
             call_parameters: RefCell::default(),
             passed_paths: RefCell::default(),
+            speaking_statements: RefCell::default(),
             proved: phrost_body::ProvedMemo::default(),
             declarations_called: RefCell::default(),
             assigned: RefCell::default(),
@@ -269,6 +281,7 @@ impl<'a> IndexView<'a> {
             calls: RefCell::default(),
             call_parameters: RefCell::default(),
             passed_paths: RefCell::default(),
+            speaking_statements: RefCell::default(),
             proved: phrost_body::ProvedMemo::default(),
             declarations_called: RefCell::default(),
             assigned: RefCell::default(),
@@ -332,6 +345,7 @@ impl<'a> IndexView<'a> {
             calls: RefCell::new(self.calls.borrow().clone()),
             call_parameters: RefCell::default(),
             passed_paths: RefCell::new(self.passed_paths.borrow().clone()),
+            speaking_statements: RefCell::default(),
             proved: phrost_body::ProvedMemo::default(),
             declarations_called: RefCell::default(),
             assigned: RefCell::new(self.assigned.borrow().clone()),

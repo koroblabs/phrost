@@ -727,9 +727,9 @@ diagnostics 308-415 -> 12.4-12.8 ms. No answer moved: every finding on Symfony, 
 and Laravel is the same line (124 027 of them), and `coverage --dump` is byte-identical on Laravel
 (243 550 lines) and WordPress (110 826). Serial `check` is inside the noise.
 
-One thing it leaves. A _named_ value handed to four hundred statement calls in one body is still
-read four hundred times over (100 ms on the same generated shape with a local), which is the same
-walk asked a fair question.
+What it left was the same walk asked about a _named_ value: a local handed to four hundred statement
+calls in one body was still read four hundred times over, 100 ms on the same generated shape. The
+note after the next one is that.
 
 ## An import was offered out of the symbol picker, once per unresolved name
 
@@ -763,3 +763,38 @@ that corpus on that machine, as the 2026-09-25 note records. `search_symbols` it
 
 What it still is: the fix-all asks about the whole file for every cursor, so a cursor's cost keeps a
 term in how many fixable problems the file has. That term is cheap now and is not gone.
+
+## What a callee says about a value is the statement's, and asking it of the whole file overflowed the stack
+
+The named half of the literal note above. `m($v);` four hundred times in one body, where `m`
+declares nothing about what it takes, cost 100 ms: every read of `$v` was handed every call before
+it, and `contract_narrowed` looked each callee up to learn that it has no by-reference parameter, no
+`@assert` and no contract -- a function's declaration is not memoized at all, so that was a name
+resolution and two clones per call per read.
+
+Whether a callee has anything to say about a path it was handed is §8.1's _property of the tree
+recomputed per position_: `CalledDeclaration::speaks_of` is the superset of what the three readers
+accept, and the answer is kept per statement, path and budget. The walk asks it before reading
+anything else off a statement, so a call that says nothing costs a lookup.
+
+**The first version was wrong in a way no test saw.** It settled the question once per _path_, for
+every statement the index holds under it, and that looked like the better shape: 800 calls in 39 ms.
+All 2 490 tests of the three crates passed. Run over the corpora it aborted on Symfony, Drupal and
+Laravel with a stack overflow, and only WordPress finished. A method's callee is found by resolving
+its receiver _where the call is written_; asked of a statement at or after the read -- which the
+index holds, and the old walk never reached -- that resolution arrives back at the same value one
+budget lower, and nothing ends it but the budget running out, twenty-four levels of the deepest
+frames in the crate. Before the position the recursion runs backwards through the file, which is why
+it was always safe. So the rule is in the walk's signature now: `speaks` is asked only of a
+statement that precedes the position. An answer that is per statement is not thereby safe to compute
+for every statement.
+
+And it is the finding-list A/B that caught it, not the suite. The comparison was there to show that
+no answer moved; what it showed first was three empty files.
+
+Measured with the version that is in: 400 calls 98-104 -> 29 ms, 800 calls 335-350 -> 53 ms -- a
+lookup per earlier call per read is still a quadratic, at a fifteenth of the constant. A body whose
+every call _does_ speak, four hundred `@assert`s about one variable, is unchanged at 102-108 ms and
+is the walk doing what it is for. No answer moved: the 124 027 findings on four corpora are the same
+lines and `coverage --dump` is byte-identical on Laravel and WordPress. Serial `check` is inside the
+noise on both.

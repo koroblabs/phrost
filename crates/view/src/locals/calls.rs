@@ -724,6 +724,26 @@ impl CalledDeclaration {
         Some((param.closure_this_ty?, self.class.as_ref()))
     }
 
+    /// Whether this declaration can say anything about the value `call` handed it.
+    ///
+    /// The three things a statement call is read for, each by the least its reader needs: a
+    /// receiver is replaced only by a contract ([`IndexView::left_in_receiver_by`]), an argument is
+    /// written only through a by-reference parameter ([`IndexView::written_through_reference`]),
+    /// and is claimed only by an `@assert` tag naming that parameter ([`Self::asserts_about`]). A
+    /// superset of what each goes on to accept, so a call this refuses is one all three would have
+    /// answered nothing for -- and nearly every call a body writes is one of those.
+    pub(crate) fn speaks_of(&self, call: &phrost_body::PassedTo) -> bool {
+        match call.passed_as {
+            phrost_body::PassedAs::Receiver(_) => self.contract.is_some(),
+            phrost_body::PassedAs::Argument(_) => {
+                self.parameter(call)
+                    .and_then(|at| self.params.get(at))
+                    .is_some_and(|param| param.by_reference)
+                    || self.asserts_about(call).is_some()
+            }
+        }
+    }
+
     /// What an `@assert` tag claims about the value the call passed.
     pub(crate) fn asserts_about(
         &self,

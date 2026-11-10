@@ -678,7 +678,7 @@ impl IndexView<'_> {
         // the assertion that rules them out. What is expensive here is resolving a callee, and
         // `passed_to_calls` already answers "is this value handed to any statement call" from the
         // body alone, which is no for nearly every value in a file.
-        let sites = self.passed_to_calls(hir, offset, path);
+        let sites = self.passed_to_calls(hir, offset, path, budget);
         if sites.is_empty() {
             return held;
         }
@@ -758,16 +758,37 @@ impl IndexView<'_> {
 }
 
 impl IndexView<'_> {
-    /// The statement calls before `offset` that `path` was passed to, read through the file's
-    /// [`phrost_body::PassedPaths`], built once per view.
+    /// The statement calls before `offset` that `path` was passed to *and whose callee says
+    /// something about it*, read through the file's [`phrost_body::PassedPaths`], built once per
+    /// view.
+    ///
+    /// Two things settled once rather than per position. Which statements hand a path over is
+    /// syntax, and is the index. Whether a statement's callee has anything to say about it -- a
+    /// by-reference parameter, an `@assert`, a contract on the receiver -- is a property of the
+    /// statement too, and was being worked out again by every read of the value: a local handed to
+    /// four hundred calls in one body had each of them looked up for every read after it, 100 ms
+    /// for a body in which not one call says anything. So the answer is kept per statement, path
+    /// and budget, and a read is handed only the calls that speak -- for nearly every value, none.
+    ///
+    /// By budget too, because what a callee resolves to can depend on how far its receiver was
+    /// followed, and an answer kept for one budget must not stand in for another's.
+    ///
+    /// Asked by the walk and only of statements *before* the position, never of the whole list
+    /// the index holds for the path. The first version asked the list, once per path, and that
+    /// overflowed the stack on three of four frameworks' source while every test passed: a
+    /// method's callee is found by resolving its receiver where the call is written, so a
+    /// statement at or after the read asks about the same value at one budget less, and the
+    /// recursion ends only when the budget does. Before the position it runs backwards through the
+    /// file, which is the order it always ran in.
     ///
     /// Only for the current file's tree, which is the one the index was built from: any other tree
     /// is walked without it, which is the answer that cannot be wrong.
-    fn passed_to_calls(
+    pub(crate) fn passed_to_calls(
         &self,
         hir: &FileHir,
         offset: TextSize,
         path: &phrost_body::ValuePath,
+        budget: u8,
     ) -> Vec<phrost_body::PassedTo> {
         // Which method names may say what they leave in their receiver: a scan of the handful a
         // project declares, so a call on a value is recorded only where it could matter.
@@ -777,7 +798,14 @@ impl IndexView<'_> {
                 phrost_body::PassedPaths::of(hir, &leaves_receiver)
                     .statements(path)
                     .to_vec();
-            return phrost_body::passed_to_calls(hir, offset, path, &every, &leaves_receiver);
+            return phrost_body::passed_to_calls(
+                hir,
+                offset,
+                path,
+                &every,
+                &leaves_receiver,
+                &|_| true,
+            );
         };
         let cached = self.passed_paths.borrow().clone();
         let index = match cached {
@@ -789,7 +817,41 @@ impl IndexView<'_> {
                 index
             }
         };
-        phrost_body::passed_to_calls(hir, offset, path, index.statements(path), &leaves_receiver)
+
+        let speaks = |statement: phrost_hir::StmtId| {
+            let key = (statement, budget);
+            let known = self
+                .speaking_statements
+                .borrow()
+                .get(&key)
+                .and_then(|answers| answers.iter().find(|(asked, _)| asked == path))
+                .map(|(_, answer)| *answer);
+            if let Some(known) = known {
+                return known;
+            }
+            // Nothing is borrowed while this runs: looking a callee up comes back through here
+            // for the values that call was written with.
+            let answer = phrost_body::passed_by_statement(hir, statement, path, &leaves_receiver)
+                .iter()
+                .any(|call| {
+                    self.declaration_called(call.at, hir, call, budget)
+                        .is_some_and(|declared| declared.speaks_of(call))
+                });
+            self.speaking_statements
+                .borrow_mut()
+                .entry(key)
+                .or_default()
+                .push((path.clone(), answer));
+            answer
+        };
+        phrost_body::passed_to_calls(
+            hir,
+            offset,
+            path,
+            index.statements(path),
+            &leaves_receiver,
+            &speaks,
+        )
     }
 
     /// An asserted subclass, with the type arguments the value already had carried down to it -- the
