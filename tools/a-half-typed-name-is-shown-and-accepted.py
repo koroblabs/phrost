@@ -26,7 +26,10 @@ completion plugins that follow it). An item the first rule drops is a bug in an 
 ships an extension for. One only the second drops is recorded and listed apart.
 
 Only what is offered is judged, so a miss here is completion's own and not a type the project
-failed to state.
+failed to state. And only the declaration the file means: where a `use` line names the class and
+the index does not hold it -- a checkout with no `vendor/` -- the rows carrying that label are
+namesakes, written with their whole path because the name is taken, and judging one of them
+reports the server for being right.
 """
 import argparse
 import importlib.util
@@ -193,6 +196,17 @@ def written_names(text, masked):
     return found
 
 
+IMPORT = re.compile(r"^use\s+(?:function\s+|const\s+)?\\?([\w\\]+?)(?:\s+as\s+(\w+))?\s*;", re.M)
+
+
+def imports_of(text):
+    """What each `use` line of a file binds: the local name to the path it names."""
+    return {
+        (match.group(2) or match.group(1).rsplit("\\", 1)[-1]).lower(): match.group(1)
+        for match in IMPORT.finditer(text)
+    }
+
+
 def label_names(item):
     """What an item's label can be read as: itself, and itself without a signature or a colon."""
     label = item.get("label") or ""
@@ -236,6 +250,8 @@ def main():
     dropped_by_range = defaultdict(list)
     miswritten = defaultdict(list)
 
+    imports = {path: imports_of(text) for path, text in texts.items()}
+
     for path, kind, start, end, name in sites:
         text = texts[path]
         sigil = 1 if name.startswith("$") else 0
@@ -251,6 +267,11 @@ def main():
         items = (result.get("items") if isinstance(result, dict) else result) or []
         bare = name.lstrip("$")
         hits = [item for item in items if name in label_names(item) or bare in label_names(item)]
+        # The class the file's own `use` line names, where it names one: any other row with the
+        # label is a namesake.
+        imported = imports[path].get(bare.lower()) if kind == "new" else None
+        if imported:
+            hits = [item for item in hits if (item.get("detail") or "").lstrip("\\") == imported]
         if not hits:
             continue
         offered[kind] += 1
