@@ -34,6 +34,9 @@ names the tag's version.
 - The enclosing class's own name before `::`, or an ancestor's, offers instance methods as `self::`
   and `parent::` do: `Base::__construct($id)` in a subclass, `PclZip::privErrorLog(...)` inside
   `PclZip`. Only static members and constants were offered.
+- Renaming a property or a method also renames the `@property` or `@method` tag that documents it on
+  the same class, and find-references lists the tag. `@property-read string $scheme` above a
+  declared `protected $scheme` was left naming the old property.
 - A class is not imported a second time under a name a `use` line already holds. Where the file's
   own import named a class the project cannot see -- a dependency that is not installed -- accepting
   a namesake added a second `use` for the same name, which PHP refuses to load. It is written with

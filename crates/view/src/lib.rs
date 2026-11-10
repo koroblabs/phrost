@@ -113,6 +113,7 @@ mod subscripts;
 mod symbols;
 mod syntax;
 mod tabled;
+mod tags_beside_declarations;
 mod trait_adaptations;
 mod trait_collision;
 mod trait_hosts;

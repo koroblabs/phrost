@@ -294,6 +294,7 @@ mod references_to_a_method_read_as_a_property;
 mod relative;
 mod rename_a_documented_parameter;
 mod rename_a_parameter_callers_name;
+mod rename_a_property_a_tag_documents;
 mod rename_a_tabled_property;
 mod rename_alias;
 mod rename_family;

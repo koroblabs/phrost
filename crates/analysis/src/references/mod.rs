@@ -809,11 +809,33 @@ fn declaration_in(view: &IndexView<'_>, target: &ReferenceTarget) -> Vec<TextRan
         ReferenceTarget::CatalogKey { .. } => return Vec::new(),
     };
 
+    // And the docblock tags that name the same member beside its declaration: `@property-read
+    // string $scheme` over `protected $scheme`. Left out, a rename rewrote the property and kept
+    // the tag. See `IndexView::tags_naming`.
+    let tags = match target {
+        ReferenceTarget::Member {
+            declared_by,
+            kind,
+            name,
+        } => view.tags_naming(declared_by.as_str(), *kind, name.as_str()),
+        ReferenceTarget::MemberFamily {
+            declarers,
+            kind,
+            name,
+            ..
+        } => declarers
+            .iter()
+            .flat_map(|declared_by| view.tags_naming(declared_by.as_str(), *kind, name.as_str()))
+            .collect(),
+        _ => Vec::new(),
+    };
+
     located
         .into_iter()
         .flatten()
         .filter(|location| location.file == current)
         .map(|location| location.name_range)
+        .chain(tags)
         .collect()
 }
 
