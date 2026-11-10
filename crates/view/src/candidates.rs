@@ -162,6 +162,38 @@ impl RankedPage {
     }
 }
 
+/// A name that holds what was typed loosely, ordered so that the greatest is the one to offer
+/// next: the higher score, then the shorter name, then the one the alphabet puts first.
+struct LooseMatch<'a> {
+    score: u32,
+    name: &'a NameKey,
+    declarers: &'a [Declarer],
+}
+
+impl Ord for LooseMatch<'_> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let (name, others) = (self.name.as_str(), other.name.as_str());
+        self.score
+            .cmp(&other.score)
+            .then_with(|| others.len().cmp(&name.len()))
+            .then_with(|| others.cmp(name))
+    }
+}
+
+impl PartialOrd for LooseMatch<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for LooseMatch<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other).is_eq()
+    }
+}
+
+impl Eq for LooseMatch<'_> {}
+
 /// A name already on the page, as PHP tells two names apart: by which of its three tables it is in
 /// and then by the name, with the case rule of that table.
 ///
@@ -428,26 +460,27 @@ impl<'a> IndexView<'a> {
             // claimed: a name cannot hold `folded` as a subsequence unless it holds every letter of
             // it. Measured on a 30 964-file checkout, the walk itself is a tenth of a millisecond
             // and scoring every name is the rest -- so the gate is what makes the pass affordable.
-            let mut scored: Vec<(u32, &NameKey, &[Declarer])> = self
+            //
+            // Best first, then the shorter name, then alphabetically -- so a tie is settled the same
+            // way on every keystroke. A list that reshuffles as somebody types is worse than a short
+            // one. Taken from a heap rather than sorted: a three-letter prefix is held loosely by
+            // thousands of names and the page takes two hundred of them, so ordering the rest was
+            // work nobody read -- 1.3 ms of an 8 ms answer for `Coo` on Symfony's 13 118 files,
+            // where 3 364 names matched and 196 were visited.
+            let mut scored: std::collections::BinaryHeap<LooseMatch<'_>> = self
                 .skeleton
                 .owners()
                 .with_letters(letters_of(&folded))
                 .filter_map(|(name, declarers)| {
-                    Some((match_score(name.as_str(), &folded)?, name, declarers))
+                    Some(LooseMatch {
+                        score: match_score(name.as_str(), &folded)?,
+                        name,
+                        declarers,
+                    })
                 })
                 .collect();
-            // Best first, then the shorter name, then alphabetically -- so a tie is settled the same
-            // way on every keystroke. A list that reshuffles as somebody types is worse than a short
-            // one.
-            scored.sort_by(|left, right| {
-                right
-                    .0
-                    .cmp(&left.0)
-                    .then_with(|| left.1.as_str().len().cmp(&right.1.as_str().len()))
-                    .then_with(|| left.1.as_str().cmp(right.1.as_str()))
-            });
 
-            for (_, _, declarers) in scored {
+            while let Some(LooseMatch { declarers, .. }) = scored.pop() {
                 for declarer in self.skeleton.rank(declarers) {
                     if !kinds.accepts(declarer.kind) {
                         continue;

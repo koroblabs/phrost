@@ -798,3 +798,27 @@ every call _does_ speak, four hundred `@assert`s about one variable, is unchange
 is the walk doing what it is for. No answer moved: the 124 027 findings on four corpora are the same
 lines and `coverage --dump` is byte-identical on Laravel and WordPress. Serial `check` is inside the
 noise on both.
+
+## A name completion's loose pass sorted thousands of matches to offer two hundred
+
+`phrost perf` asks completion after a `->`, so nothing in it has ever timed a _name_ being completed
+-- and a name is what is typed most. Measured through `serve` with every name a file writes cut in
+half (Symfony, 13 118 files, 284 sites, the edit's own cost taken out by a cheap request first): p50
+3 ms, p95 13.9 ms, and every answer over 12 ms was a page of two hundred. Inside one, for `Coo`: 7.2
+ms finding the candidates against 1.1 ms writing two hundred rows. The prefix pass finds thirty
+`Coo*` names, so the loose pass runs, and it held 3 364 names loosely, sorted all of them, and
+visited 196.
+
+The sort is the part nobody read. Best first is a total order -- score, then the shorter name, then
+the alphabet -- so a heap popped until the page is full hands back the same rows in the same order
+and orders nothing it does not offer. Over the 190 loose passes of that run: median 1.65 ms -> 1.20
+ms, mean 2.22 -> 1.61; `Date` 5.4 -> 3.8 ms, `Resp` 4.5 -> 3.2. The answers are the same list.
+
+What is left is the walk itself: one pass over every short name the project declares with a mask
+test each, then a score for what passes. Three letters are held by thousands of names and that is
+most of the 3-4 ms that remain. A first-letter index would cut it; it has not been needed, and the
+numbers above are from a virtual machine about three times slower than the laptop the budgets were
+set on.
+
+The instrument is the note: a sweep that samples one kind of site says nothing about the others, and
+the commonest one was outside it.
