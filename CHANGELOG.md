@@ -3,6 +3,34 @@
 A release's section is its notes on GitHub: the release workflow publishes the section whose heading
 names the tag's version.
 
+## Unreleased
+
+**The linter**
+
+- `printf`, `sprintf` and `fprintf` given an unpacked value -- `printf('%s %d', ...$row)` -- are no
+  longer reported as missing arguments, and a call that really is short says how many values it was
+  given rather than repeating how many it needs.
+- A deprecation raised the way Symfony and Drupal ask for it,
+  `@trigger_error('...', E_USER_DEPRECATED)`, is no longer reported as an unsafe use of `@`. Every
+  other silenced call still is. In Drupal core that was 368 of the rule's 483 findings.
+- The deprecation rules that need PHP 8.1 or later run: an implicitly nullable parameter, a class
+  named `_`, `(integer)` and the other long casts, a `case` ended by a semicolon, the backtick
+  operator, a reference returned from a `void` function. They never had, because the linter was told
+  no PHP version and took 8.0. A deprecation is shown as a warning, and a rule that advises newer
+  syntax follows the oldest PHP `composer.json` requires.
+- `assert-description` and `sensitive-parameter` are reported only where a project names them in
+  `phrost.toml`: the first objects to `assert($x instanceof T)`, which the type checker narrows
+  through, and the second decides by a parameter's name.
+- `strict-behavior` asks `base64_decode` for strict decoding, where it said strict comparison.
+
+**Faster**
+
+- Diagnostics for a file of `define()` calls, or any long run of calls taking literals: a 3317-line
+  stub file went from 145 ms to 6 ms.
+- Code actions in a file naming classes nothing declares, which is every file of a project before
+  `composer install`: at a cursor in Laravel's own tests, p95 from 1 489 ms to 19 ms.
+- A value handed to hundreds of calls in one function: 800 calls, from 335 ms to 53 ms.
+
 ## 0.1.1
 
 - Less memory on macOS: mimalloc is the process's allocator under `lspkit_heap::Heap`, so what the
