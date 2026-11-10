@@ -18,20 +18,23 @@
 //!
 //! Not every client filters by a word. VS Code, and the completion that follows it, filters by the
 //! text the item's edit *replaces* -- the range this server sends -- against the same `filterText`
-//! or label. For most items the two are one question, because the range is the word. They part
-//! where the range starts before it: `new \RuntimeE|` replaces `\RuntimeE` and is labelled
-//! `RuntimeException`, so a client matching the replaced text finds no `\` in the label and drops
-//! the item, while one matching the word `RuntimeE` keeps it. Seven of fifty `new` sites sampled in
-//! Laravel's and Drupal's own source are written that way.
+//! or label. The two are one question wherever the range is the word, and they part where the range
+//! starts before it: `use App\Http\Resp|` replaced the whole path and was filtered by `Response`,
+//! `service('application.ma|')` replaced the whole id and was filtered by `manager`, and a client
+//! matching `App\Http\Resp` against `Response` finds no `\` there and drops an item the server
+//! offered. All forty-four `use` lines sampled in Symfony's source, and every id with a dot in it.
 //!
-//! Such an item is handed the text it writes, `\RuntimeException`, which holds the replaced text
-//! for the one client and the word for the other. Only where the label does not already hold what
-//! was typed, so every other item is filtered by its label as before.
+//! One string cannot hold the last word for one client and the whole path for the other -- but the
+//! *range* can move instead. An item that begins with the head exactly as it was typed would write
+//! those characters back unchanged, so its edit leaves them standing and replaces only the word:
+//! `Resp` with `Response`, `ma` with `manager`. The buffer afterwards is the same byte for byte,
+//! and now the replaced text and the client's word are one thing, so both kinds of client ask the
+//! same question of the same `filterText`. It is also the edit a client that ignores the range and
+//! replaces its own word would have needed.
 //!
-//! What this does not reach is the rule above it: a rest past the head -- `manager` for
-//! `application.ma|` -- is the word model's, and a client matching `application.ma` against it
-//! finds nothing. One string cannot rank an id by its last word for one client and hold all of it
-//! for the other, and the client the ranking was measured in is the one it is kept for.
+//! What is left is the item that does *not* go on from what was typed: one spelled in another case,
+//! or `new \RuntimeE|` offered as an import. Its edit still covers everything typed, and where its
+//! label does not hold that text it is handed the plain text it writes, which does.
 
 /// What was typed where an item goes, and the part of it before the client's word: everything up
 /// to and including the last character no word holds. The head is empty when the whole of what was
@@ -58,12 +61,32 @@ impl<'a> TypedHead<'a> {
         ch.is_alphanumeric() || ch == '_' || ch == '$'
     }
 
-    /// The `filterText` for an item labelled `label`.
+    /// How many bytes of what an item writes are left standing rather than written again: the
+    /// whole head, when `written` begins with it exactly as typed, and nothing otherwise.
+    ///
+    /// `written` is the item's text before any snippet syntax is added, and `cursor` the place in
+    /// it the cursor is sent to, which has to be past what is taken off.
+    pub(crate) fn kept(&self, written: &str, cursor: Option<usize>) -> usize {
+        let head = self.head;
+        let goes_on = !head.is_empty() && written.len() > head.len() && written.starts_with(head);
+        match goes_on && cursor.is_none_or(|at| at >= head.len()) {
+            true => head.len(),
+            false => 0,
+        }
+    }
+
+    /// The `filterText` for an item labelled `label`, whose edit leaves the first `kept` bytes of
+    /// what was typed standing -- see [`Self::kept`].
     ///
     /// Its rest past the head, when it starts with it. Failing that, `written` -- the plain text
-    /// the item's edit writes, where there is one -- when the label does not hold what was typed
-    /// and that text does: see the module on the client that filters by what is replaced.
-    pub(crate) fn filter_text(&self, label: &str, written: Option<&str>) -> Option<String> {
+    /// the item's edit writes, where there is one -- when the label does not hold what the edit
+    /// replaces and that text does: see the module on the client that filters by what is replaced.
+    pub(crate) fn filter_text(
+        &self,
+        label: &str,
+        written: Option<&str>,
+        kept: usize,
+    ) -> Option<String> {
         let head = self.head;
         if !head.is_empty()
             && label.len() > head.len()
@@ -73,8 +96,9 @@ impl<'a> TypedHead<'a> {
         {
             return Some(label[head.len()..].to_owned());
         }
+        let replaced = self.typed.get(kept..).unwrap_or(self.typed);
         let written = written?;
-        (!Self::holds(label, self.typed) && Self::holds(written, self.typed))
+        (!Self::holds(label, replaced) && Self::holds(written, replaced))
             .then(|| written.to_owned())
     }
 

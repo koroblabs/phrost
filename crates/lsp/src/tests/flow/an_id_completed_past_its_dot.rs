@@ -7,6 +7,9 @@
 //! rest of itself, which is what the client's word is then compared against -- and every item
 //! carries its place in the list as `sortText`, which is what the client falls back on where its
 //! scores tie.
+//!
+//! Its edit replaces that word and no more, so a client that filters by the text an edit replaces
+//! compares the same two strings: see `an_item_going_on_from_what_was_typed`.
 
 use expect_test::expect;
 use serde_json::json;
@@ -67,15 +70,15 @@ function use_it(): object
         .await;
     let result = serde_json::to_value(response.result().expect("completion answered"))
         .expect("serialisable");
+    let text = server.text("web/modules/mine/src/Use.php");
     let rendered = result["items"]
         .as_array()
         .into_iter()
         .flatten()
         .map(|item| {
             format!(
-                "{} filter={} sort={}",
-                item["label"].as_str().unwrap_or("?"),
-                item["filterText"].as_str().unwrap_or("(label)"),
+                "{} sort={}",
+                super::an_item_going_on_from_what_was_typed::offered(&text, item),
                 item["sortText"].as_str().unwrap_or("(none)")
             )
         })
@@ -85,8 +88,8 @@ function use_it(): object
         (
             Bool(true),
             [
-                "application.manager filter=manager sort=00000",
-                "application.memo.manager filter=memo.manager sort=00001",
+                "application.manager replaces `mana` with `manager` filter=manager sort=00000",
+                "application.memo.manager replaces `mana` with `memo.manager` filter=memo.manager sort=00001",
             ],
         )
     "#]]
@@ -147,15 +150,15 @@ namespace Drupal\mine;
         .await;
     let result = serde_json::to_value(response.result().expect("completion answered"))
         .expect("serialisable");
+    let text = server.text("web/modules/mine/mine.services.yml");
     let rendered = result["items"]
         .as_array()
         .into_iter()
         .flatten()
         .map(|item| {
             format!(
-                "{} filter={} sort={}",
-                item["label"].as_str().unwrap_or("?"),
-                item["filterText"].as_str().unwrap_or("(label)"),
+                "{} sort={}",
+                super::an_item_going_on_from_what_was_typed::offered(&text, item),
                 item["sortText"].as_str().unwrap_or("(none)")
             )
         })
@@ -165,8 +168,8 @@ namespace Drupal\mine;
         (
             Bool(true),
             [
-                "application.manager filter=manager sort=00000",
-                "application.memo.manager filter=memo.manager sort=00001",
+                "application.manager replaces `mana` with `manager` filter=manager sort=00000",
+                "application.memo.manager replaces `mana` with `memo.manager` filter=memo.manager sort=00001",
             ],
         )
     "#]]

@@ -1775,3 +1775,27 @@ Found while confirming an unrelated fix on the reference project, by a driven `s
 returned nothing where it should have returned two findings. `Workspace::version_at` answers by path
 for both spellings and `open_documents` lists both. The next reader that asks "is this open" should
 ask by path, or it will rediscover this.
+
+## Two kinds of client filter a completion list, and the range was the thing to move
+
+A client keeps or drops each item by matching something the person typed against the item's
+`filterText`, or its label. Which something differs: Zed takes the _word_ at the cursor by its
+language's word characters, and VS Code and the completion that follows it take the text the item's
+edit _replaces_. The server is not told which it is talking to. Wherever an edit covered more than
+the word -- a `use` path, a name written from the root, a service id with dots -- those were two
+strings, and three fixes in a row treated it as a question about `filterText`: the rest past the
+last dot for the word (`manager` for `application.ma`), then the text written for the range
+(`\RuntimeException` for `\RuntimeE`), then a note saying one string cannot serve both. All
+forty-four `use` lines sampled in Symfony's source were hidden from the second kind of client.
+
+The string was never the thing to change. An item that begins with what was typed before the word
+only writes it back, so its edit can leave that standing and replace the word alone: `Resp` with
+`Response`, `ma` with `manager`. The buffer afterwards is the same byte for byte, the replaced text
+_is_ the word, and both clients compare the same two strings. `TypedHead::kept` decides it in one
+place for the PHP path and the configuration path. What is left is an item that does not go on from
+what was typed -- a path spelled in another case -- whose edit still covers all of it.
+
+The form is §8.1's: when the same shape of bug recurs, the fix to reach for is the one that removes
+the shape. And the instrument is the one that found the first of these:
+`tools/a-half-typed-name-is-shown-and-accepted.py` reports both rules side by side, and the column
+for the second had been reading as a limitation rather than as a count.

@@ -126,6 +126,17 @@ impl Backend {
             .get(replaced.start..usize::from(offset))
             .unwrap_or_default();
         let head = super::client_word::TypedHead::of(typed);
+        // Without the head, for an id that goes on from it -- the reason the PHP path gives.
+        let replace_word = |kept: usize| {
+            crate::convert::range_of(
+                &text,
+                &index,
+                phrost_model::TextRange::new(
+                    phrost_model::TextSize::try_from(replaced.start + kept).unwrap_or_default(),
+                    phrost_model::TextSize::try_from(replaced.end).unwrap_or_default(),
+                ),
+            )
+        };
 
         Some(CompletionResponse::List(CompletionList {
             // The list is cut at `CONFIGURED_KEYS`, so the client must keep asking as the prefix
@@ -135,11 +146,12 @@ impl Backend {
             items: items
                 .into_iter()
                 .enumerate()
-                .map(|(rank, item)| CompletionItem {
+                .map(|(rank, item)| (rank, head.kept(&item.name, None), item))
+                .map(|(rank, kept, item)| CompletionItem {
                     // The order the list was built in, for where a client's scores tie -- the
                     // reason the PHP path gives.
                     sort_text: Some(format!("{rank:05}")),
-                    filter_text: head.filter_text(&item.name, None),
+                    filter_text: head.filter_text(&item.name, None, kept),
                     label: item.name.to_string(),
                     detail: (!item.detail.is_empty()).then(|| item.detail.to_string()),
                     kind: Some(match item.kind {
@@ -152,8 +164,11 @@ impl Backend {
                     // gives: a client works the replaced word out from its own idea of one, and a
                     // service id is full of dots and slashes that most of them break on.
                     text_edit: Some(CompletionTextEdit::Edit(TextEdit {
-                        range: replace,
-                        new_text: item.name.to_string(),
+                        range: match kept {
+                            0 => replace,
+                            kept => replace_word(kept),
+                        },
+                        new_text: item.name.get(kept..).unwrap_or(&item.name).to_string(),
                     })),
                     ..CompletionItem::default()
                 })

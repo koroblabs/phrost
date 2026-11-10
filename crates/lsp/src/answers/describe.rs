@@ -72,6 +72,16 @@ impl Backend {
             .get(usize::from(list.replace.start())..usize::from(offset))
             .unwrap_or_default();
         let head = super::client_word::TypedHead::of(typed);
+        // The same range without the head, for an item that goes on from it: what it would write
+        // back unchanged is left standing, so what is replaced is the client's word.
+        let replace_word = |kept: usize| {
+            let kept = phrost_model::TextSize::try_from(kept).unwrap_or_default();
+            convert::range_of(
+                &text,
+                &index,
+                phrost_model::TextRange::new(list.replace.start() + kept, list.replace.end()),
+            )
+        };
 
         Ok(Some(CompletionResponse::List(CompletionList {
             // A truncated list has to say so, or the client filters what it has as the prefix grows
@@ -85,12 +95,18 @@ impl Backend {
                     // Worked out before the item is taken apart, because it reads three of its
                     // fields -- and the format has to agree with the text, since a client told
                     // `SNIPPET` reads every `$` in it as syntax.
-                    let (new_text, format) = written(&item, snippets);
+                    let insertion = item.insert.as_ref();
+                    let kept = head.kept(
+                        insertion.map_or(item.label.as_str(), |insertion| &insertion.text),
+                        insertion.and_then(|insertion| insertion.cursor),
+                    );
+                    let (new_text, format) = written(&item, snippets, kept);
                     // Before the text is moved into the edit. A snippet is not what gets written
                     // -- its `$` are syntax -- so only plain text can stand in for the label.
                     let filter_text = head.filter_text(
                         &item.label,
                         (format != Some(InsertTextFormat::SNIPPET)).then_some(new_text.as_str()),
+                        kept,
                     );
                     CompletionItem {
                         kind: Some(completion_kind(item.kind)),
@@ -99,7 +115,10 @@ impl Backend {
                         // person has picked the item it was warning them about.
                         tags: item.deprecated.then(|| vec![CompletionItemTag::DEPRECATED]),
                         text_edit: Some(CompletionTextEdit::Edit(TextEdit {
-                            range: replace,
+                            range: match kept {
+                                0 => replace,
+                                kept => replace_word(kept),
+                            },
                             new_text,
                         })),
                         detail: item.detail,
@@ -330,15 +349,18 @@ fn completion_kind(kind: phrost_model::SymbolKind) -> CompletionItemKind {
 fn written(
     item: &phrost_analysis::CompletionItem,
     snippets: bool,
+    kept: usize,
 ) -> (String, Option<InsertTextFormat>) {
     use phrost_analysis::CallShape;
 
     let insertion = item.insert.as_ref();
-    let text = insertion.map_or_else(|| item.label.clone(), |insertion| insertion.text.clone());
+    let text = insertion.map_or(item.label.as_str(), |insertion| &insertion.text);
+    let text = text.get(kept..).unwrap_or(text).to_owned();
 
     if let Some(at) = insertion.and_then(|insertion| insertion.cursor)
         && snippets
     {
+        let at = at.saturating_sub(kept);
         let (head, tail) = text.split_at(at);
         return (
             format!("{}$0{}", snippet_escaped(head), snippet_escaped(tail)),

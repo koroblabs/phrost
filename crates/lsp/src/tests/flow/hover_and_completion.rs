@@ -154,12 +154,13 @@ class Repo
 }
 
 #[tokio::test]
-async fn a_completion_replaces_the_whole_path_already_typed() {
-    // What the client is told to replace, not what it would guess. Its idea of a word stops at the
-    // separator, so being handed a qualified name and left to place it leaves the prefix twice over.
+async fn a_completion_finishes_the_path_already_typed() {
+    // What the client is told to replace, not what it would guess -- and the two agree. Its idea
+    // of a word stops at the separator; the edit replaces that word with the rest of the name and
+    // leaves the path before it standing, so no client ends up with the prefix twice over.
     //
-    // And what replaces it is the path as written, finished: a person writing a path from the root
-    // is choosing that spelling, and a short name with an import is the answer for a *bare* word --
+    // What comes of it is the path as written, finished: a person writing a path from the root is
+    // choosing that spelling, and a short name with an import is the answer for a *bare* word --
     // see `a_bare_name_comes_with_its_import` below for that half over the protocol.
     let mut server = Fixture::new(
         r#"
@@ -196,7 +197,7 @@ namespace Other;
 
     expect![[r#"
         [
-            "Repository 3:0-3:15 -> \\App\\Nested\\Repository",
+            "Repository 3:12-3:15 -> Repository",
         ]
     "#]]
     .assert_debug_eq(&render_offered(&offered));

@@ -14,8 +14,14 @@ names the tag's version.
   import, or by the namespace the file is in -- is offered first. In a file with
   `use RuntimeException;`, `new RuntimeE` put the MongoDB extension's class ahead of PHP's and wrote
   its full path when accepted.
-- A name written from the root, `new \RuntimeE`, is no longer dropped by an editor that filters a
-  completion list by the text an item replaces rather than by the word at the cursor.
+- A completion that goes on from what is already typed replaces only the last word of it, so an
+  editor that filters a list by the text an item replaces -- rather than by the word at the cursor,
+  as Zed does -- no longer drops it: a `use` path (`use App\Http\Resp`), a name written from the
+  root (`new \RuntimeE`) and a service id past its dot (`service('application.ma')`).
+- A class is not imported a second time under a name a `use` line already holds. Where the file's
+  own import named a class the project cannot see -- a dependency that is not installed -- accepting
+  a namesake added a second `use` for the same name, which PHP refuses to load. It is written with
+  its full path instead, and the "Import" quick fix is not offered.
 - `setrawcookie()` takes its options array: `setrawcookie($name, $value, ['expires' => $at])` was
   reported as an array given for an `int`, because the stubs declared the function's two forms
   separately and only the first was read.
