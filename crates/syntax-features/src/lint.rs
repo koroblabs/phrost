@@ -28,11 +28,9 @@ use phrost_syntax::text_range;
 
 mod deprecation_notice;
 mod descent;
-mod format_values;
 mod php_floor;
 
 use deprecation_notice::DeprecationNotice;
-use format_values::FormatValues;
 use php_floor::PhpFloor;
 
 /// One thing a rule found.
@@ -624,22 +622,10 @@ pub fn lint(
             {
                 return None;
             }
-            // Asked of the tree only for the one rule that miscounts, which fires on almost no
-            // file; see `format_values` for the two things it gets wrong.
-            let values = (code == "no-missing-format-argument")
-                .then(|| FormatValues::of(program, &issue, span))
-                .flatten();
-            if values == Some(FormatValues::Unpacked) {
-                return None;
-            }
-            let message = speaking_only_of_phrost(issue.message);
             Some(LintIssue {
                 range: text_range(span),
                 code: code.to_owned(),
-                message: match values {
-                    Some(FormatValues::Written(given)) => FormatValues::stated(message, given),
-                    _ => message,
-                },
+                message: speaking_only_of_phrost(issue.message),
                 severity: match issue.level {
                     // A deprecation is a warning whatever level its rule gives it. The line runs,
                     // on the PHP that deprecates it and on every one before, and PHP's own word

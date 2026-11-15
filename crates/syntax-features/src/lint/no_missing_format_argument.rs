@@ -3,8 +3,9 @@
 //! The report that started it: `printf("... %6d %6d\n", 'total', '', ...array_values($totals))`,
 //! eight placeholders and six of them supplied by the unpacked array, answered with "contains 8
 //! placeholders, 8 values given" -- a finding that was wrong, in a sentence that contradicted
-//! itself. Two defects in one rule, and [`super::format_values::FormatValues`] is where each is
-//! put right.
+//! itself. Two defects in one rule. This project corrected both from outside for a release, and
+//! mago took the fix upstream in 1.60.0 -- so the correction is gone and these tests stay, holding
+//! the rule to the same answers whoever gives them.
 
 use expect_test::expect;
 
