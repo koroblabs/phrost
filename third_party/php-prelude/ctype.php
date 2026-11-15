@@ -29,8 +29,6 @@ function ctype_cntrl(string $text): bool {}
  * Determines whether every character in a string is a decimal digit (0-9). Returns false for an
  * empty string.
  *
- * @assert-if-true numeric-string $text
- *
  * @pure
  */
 function ctype_digit(string $text): bool {}

@@ -4,6 +4,8 @@ namespace {
     class PDOException extends RuntimeException
     {
         public ?array $errorInfo;
+
+        /** @var int|string */
         protected $code;
     }
 
@@ -419,6 +421,8 @@ namespace {
          * later execution, without running it yet, and returns it as a PDOStatement. Returns false
          * on failure instead of throwing, unless the error mode is PDO::ERRMODE_EXCEPTION, which
          * has been the default since PHP 8.0.
+         *
+         * @ignore-falsable-return
          *
          * @throws PDOException
          */

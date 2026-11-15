@@ -11,8 +11,9 @@
 //! nothing at all -- the reports come back and read as a regression somewhere else entirely.
 //!
 //! An entry leaves this table when upstream writes the tag itself: 1.58.2 took `base64_decode()`'s
-//! conditional and the `class_parents()`/`class_uses()`/`class_implements()` maps, so they are the
-//! set's own now and a re-vendor keeps them.
+//! conditional and the `class_parents()`/`class_uses()`/`class_implements()` maps, and 1.60.0 took
+//! `DOMXPath::query()`'s `DOMNodeList<DOMNode>|false`, so they are the set's own now and a re-vendor
+//! keeps them.
 //!
 //! `DOMNode::$childNodes` is the same statement about a property rather than a return, and it is
 //! here for a sharper version of the same reason: the tag it lost does not make the type *absent*,
@@ -34,18 +35,11 @@ struct AddedTag {
     tag: &'static str,
 }
 
-static ADDED: &[AddedTag] = &[
-    AddedTag {
-        file: "dom.php",
-        declares: "public DOMNodeList $childNodes;",
-        tag: "@var DOMNodeList<DOMNode>",
-    },
-    AddedTag {
-        file: "dom.php",
-        declares: "public function query(string $expression, ?DOMNode $contextNode",
-        tag: "@return DOMNodeList<DOMNode>|false",
-    },
-];
+static ADDED: &[AddedTag] = &[AddedTag {
+    file: "dom.php",
+    declares: "public DOMNodeList $childNodes;",
+    tag: "@var DOMNodeList<DOMNode>",
+}];
 
 #[test]
 fn every_type_tag_this_project_added_is_still_in_the_set() {

@@ -509,6 +509,9 @@ function date_sunset(
  */
 function date_sun_info(int $timestamp, float $latitude, float $longitude): array {}
 
+/**
+ * @inheritors DateTime|DateTimeImmutable
+ */
 interface DateTimeInterface
 {
     /** @var non-empty-string */
@@ -665,6 +668,8 @@ class DateTime implements DateTimeInterface
      * Parses $datetime according to $format and returns a new DateTime, or false if $datetime does
      * not match $format. Use DateTime::getLastErrors() afterwards to inspect the warnings and
      * errors from the parse.
+     *
+     * @return static|false
      */
     public static function createFromFormat(
         string $format,

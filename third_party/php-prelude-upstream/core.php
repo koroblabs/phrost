@@ -143,8 +143,10 @@ interface Throwable extends Stringable
 
 class Exception implements Throwable
 {
+    /** @var string */
     protected $message;
 
+    /** @var int */
     protected $code;
 
     protected string $file;
@@ -202,8 +204,10 @@ class Exception implements Throwable
 
 class Error implements Throwable
 {
+    /** @var string */
     protected $message;
 
+    /** @var int */
     protected $code;
 
     protected string $file;
@@ -282,6 +286,8 @@ class DivisionByZeroError extends ArithmeticError {}
 
 #[Mago\AvailableSince(80000)]
 class UnhandledMatchError extends Error {}
+
+class ClosedGeneratorException extends Exception {}
 
 #[Mago\AvailableSince(80400)]
 class RequestParseBodyException extends Exception {}
@@ -665,13 +671,22 @@ final class SensitiveParameter
     public function __construct() {}
 }
 
+/**
+ * @template-covariant T
+ */
 #[Mago\AvailableSince(80200)]
 final class SensitiveParameterValue
 {
     private readonly mixed $value;
 
+    /**
+     * @param T $value
+     */
     public function __construct(mixed $value) {}
 
+    /**
+     * @return T
+     */
     public function getValue(): mixed {}
 
     public function __debugInfo(): array {}
@@ -805,8 +820,13 @@ function define(string $constant_name, mixed $value, bool $case_insensitive = fa
 function defined(string $constant_name): bool {}
 
 /**
+ * @template T of object
+ *
+ * @param T $object
+ *
+ * @return class-string<T>
+ *
  * @pure
- * @return class-string
  */
 function get_class(object $object = UNKNOWN): string {}
 

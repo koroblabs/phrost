@@ -1,6 +1,6 @@
 # PHP prelude stubs, as vendored
 
-`mago-prelude` **1.58.2** exactly as it is published, and the answer to one question:
+`mago-prelude` **1.60.1** exactly as it is published, and the answer to one question:
 *what did this project change?*
 
 Nothing here is edited, ever. The set beside it, `third_party/php-prelude`, carries around ten
@@ -33,8 +33,8 @@ tar xzf mago-prelude-<version>.crate
 ```
 
 `assets/mago.php` and `assets/extensions/*.php` are flattened into one directory here, which is the
-single structural difference from upstream and the reason the diff beside it is file-to-file. 139
-files here, and 138 beside it: `swoole.php` is the one this project leaves out.
+single structural difference from upstream and the reason the diff beside it is file-to-file. 140
+files here, and 139 beside it: `swoole.php` is the one this project leaves out.
 
 ## Re-vendoring
 

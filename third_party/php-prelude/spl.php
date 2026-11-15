@@ -68,7 +68,7 @@ class EmptyIterator implements Iterator
 /**
  * @template-covariant K
  * @template-covariant V
- * @template-covariant TIterator as Iterator<K, V>
+ * @template-covariant TIterator as Iterator<K, V> = Iterator<K, V>
  *
  * @template-implements OuterIterator<K, V>
  *
@@ -105,7 +105,7 @@ class CallbackFilterIterator extends FilterIterator implements OuterIterator
 /**
  * @template K
  * @template V
- * @template TIterator as RecursiveIterator<K, V>
+ * @template TIterator as RecursiveIterator<K, V> = RecursiveIterator<K, V>
  *
  * @template-implements RecursiveIterator<K, V>
  * @template-extends CallbackFilterIterator<K, V, TIterator>
@@ -330,7 +330,7 @@ interface OuterIterator extends Iterator
 /**
  * @template K
  * @template-covariant V
- * @template I of Traversable<K, V>
+ * @template I of Traversable<K, V> = Traversable<K, V>
  *
  * @implements OuterIterator<K, V>
  *
@@ -397,7 +397,7 @@ class IteratorIterator implements OuterIterator
 /**
  * @template-covariant K
  * @template-covariant V
- * @template-covariant TIterator as Traversable<K, V>
+ * @template-covariant TIterator as Traversable<K, V> = Traversable<K, V>
  *
  * @template-extends IteratorIterator<K, V, TIterator>
  */
@@ -434,7 +434,7 @@ abstract class FilterIterator extends IteratorIterator
 /**
  * @template K
  * @template V
- * @template TIterator as RecursiveIterator<K, V>
+ * @template TIterator as RecursiveIterator<K, V> = RecursiveIterator<K, V>
  *
  * @template-extends FilterIterator<K, V, TIterator>
  * @template-implements RecursiveIterator<K, V>
@@ -453,7 +453,7 @@ abstract class RecursiveFilterIterator extends FilterIterator implements Recursi
      * Returns the current element's children, wrapped in a new instance of the same filter class,
      * so that filtering by accept() continues into the recursion.
      *
-     * @return TIterator
+     * @return static
      */
     public function getChildren() {}
 
@@ -487,7 +487,7 @@ abstract class RecursiveFilterIterator extends FilterIterator implements Recursi
 /**
  * @template K
  * @template V
- * @template TIterator as RecursiveIterator<K, V>
+ * @template TIterator as RecursiveIterator<K, V> = RecursiveIterator<K, V>
  *
  * @template-extends RecursiveFilterIterator<K, V, TIterator>
  */
@@ -570,7 +570,7 @@ interface SeekableIterator extends Iterator
 /**
  * @template-covariant K
  * @template-covariant V
- * @template-covariant TIterator as Iterator<K, V>
+ * @template-covariant TIterator as Iterator<K, V> = Iterator<K, V>
  *
  * @template-implements OuterIterator<K, V>
  * @template-extends IteratorIterator<K, V, TIterator>
@@ -589,6 +589,10 @@ class LimitIterator extends IteratorIterator implements OuterIterator
      * @param TIterator $iterator
      */
     public function __construct(Iterator $iterator, int $offset = 0, int $limit = -1) {}
+
+    public function getPosition(): int {}
+
+    public function seek(int $offset): int {}
 
     /**
      * Returns the current element's value. It is valid only while iteration is within the offset-
@@ -612,7 +616,7 @@ class LimitIterator extends IteratorIterator implements OuterIterator
 /**
  * @template-covariant K
  * @template-covariant V
- * @template-covariant TIterator as Iterator<K, V>
+ * @template-covariant TIterator as Iterator<K, V> = Iterator<K, V>
  *
  * @template-implements OuterIterator<K, V>
  * @template-implements ArrayAccess<K, V>
@@ -674,6 +678,10 @@ class CachingIterator extends IteratorIterator implements OuterIterator, ArrayAc
      */
     public function hasNext() {}
 
+    public function getFlags(): int {}
+
+    public function setFlags(int $flags): void {}
+
     /**
      * Returns the wrapped iterator's current value.
      *
@@ -703,7 +711,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator, ArrayAc
 /**
  * @template K
  * @template V
- * @template TIterator as Iterator<K, V>
+ * @template TIterator as Iterator<K, V> = Iterator<K, V>
  *
  * @template-implements RecursiveIterator<K, V>
  * @template-extends CachingIterator<K, V, TIterator>
@@ -729,7 +737,7 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
 /**
  * @template-covariant K
  * @template-covariant V
- * @template-covariant TIterator as Iterator<K, V>
+ * @template-covariant TIterator as Iterator<K, V> = Iterator<K, V>
  *
  * @template-extends IteratorIterator<K, V, TIterator>
  */
@@ -765,7 +773,7 @@ class NoRewindIterator extends IteratorIterator
 /**
  * @template K
  * @template V
- * @template TIterator as Iterator<K, V>
+ * @template TIterator as Iterator<K, V> = Iterator<K, V>
  *
  * @template-extends IteratorIterator<K, V, TIterator>
  */
@@ -830,7 +838,7 @@ class AppendIterator extends IteratorIterator
 /**
  * @template-covariant K
  * @template-covariant V
- * @template-covariant TIterator as Iterator<K, V>
+ * @template-covariant TIterator as Iterator<K, V> = Iterator<K, V>
  *
  * @template-extends IteratorIterator<K, V, TIterator>
  */
@@ -869,12 +877,15 @@ class InfiniteIterator extends IteratorIterator
 /**
  * @template K
  * @template V
- * @template TIterator as Iterator<K, V>
+ * @template TIterator as Iterator<K, V> = Iterator<K, V>
  *
  * @template-extends FilterIterator<K, V, TIterator>
  */
 class RegexIterator extends FilterIterator
 {
+    public ?string $replacement = null;
+
+    const INVERT_MATCH = 2;
     const MATCH = 0;
     const GET_MATCH = 1;
     const ALL_MATCHES = 2;
@@ -884,10 +895,10 @@ class RegexIterator extends FilterIterator
 
     /**
      * Filters $iterator down to the elements whose value, or key when $flags includes
-     * RegexIterator::USE_KEY, matches $regex. $mode controls what current() then returns:
+     * RegexIterator::USE_KEY, matches $pattern. $mode controls what current() then returns:
      * RegexIterator::MATCH returns the value unchanged, GET_MATCH returns the array of captured
      * groups, ALL_MATCHES returns every match found, SPLIT returns the pieces produced by splitting
-     * on the pattern, and REPLACE substitutes the matches. $preg_flags is passed straight through
+     * on the pattern, and REPLACE substitutes the matches. $pregFlags is passed straight through
      * to the underlying PCRE function.
      *
      * @code
@@ -895,16 +906,16 @@ class RegexIterator extends FilterIterator
      * @endcode
      *
      * @param TIterator $iterator
-     * @param string $regex
+     * @param string $pattern
      * @param RegexIterator::MATCH|RegexIterator::GET_MATCH|RegexIterator::ALL_MATCHES|RegexIterator::SPLIT|RegexIterator::REPLACE $mode
      * @param 0|RegexIterator::USE_KEY $flags
      */
     public function __construct(
         Iterator $iterator,
-        string $regex,
+        string $pattern,
         int $mode = self::MATCH,
         int $flags = 0,
-        int $preg_flags = 0,
+        int $pregFlags = 0,
     ) {}
 
     public function accept(): bool {}
@@ -934,7 +945,7 @@ class RegexIterator extends FilterIterator
 /**
  * @template K
  * @template V
- * @template TIterator as RecursiveIterator<K, V>
+ * @template TIterator as RecursiveIterator<K, V> = RecursiveIterator<K, V>
  *
  * @template-implements RecursiveIterator<K, V>
  * @template-extends RegexIterator<K, V, TIterator>
@@ -950,17 +961,17 @@ class RecursiveRegexIterator extends RegexIterator implements RecursiveIterator
 
     /**
      * @param TIterator $iterator
-     * @param string $regex
+     * @param string $pattern
      * @param RecursiveRegexIterator::MATH|RecursiveRegexIterator::GET_MATCH|RecursiveRegexIterator::ALL_MATCHES|RecursiveRegexIterator::SPLIT|RecursiveRegexIterator::REPLACE $mode
      * @param RecursiveRegexIterator::USE_KEY|0 $flags
-     * @param int $preg_flags
+     * @param int $pregFlags
      */
     public function __construct(
         RecursiveIterator $iterator,
-        string $regex,
+        string $pattern,
         int $mode = self::MATCH,
         int $flags = 0,
-        int $preg_flags = 0,
+        int $pregFlags = 0,
     ) {}
 
     /**
@@ -1027,25 +1038,25 @@ class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIt
     public function callHasChildren() {}
 
     /**
-     * Constructs a tree-formatting iterator over $it. $flags controls whether the tree-branch
+     * Constructs a tree-formatting iterator over $iterator. $flags controls whether the tree-branch
      * drawing is applied to current() and key(): RecursiveTreeIterator::BYPASS_CURRENT skips it for
      * current(), and RecursiveTreeIterator::BYPASS_KEY, set by default, skips it for key(), so only
-     * current() is decorated unless told otherwise. $cit_flags defaults to
+     * current() is decorated unless told otherwise. $cachingIteratorFlags defaults to
      * RecursiveTreeIterator::CATCH_GET_CHILD, which suppresses exceptions thrown by an element's
      * getChildren() and treats that element as childless instead of letting the error propagate.
      * $mode chooses the traversal order: LEAVES_ONLY visits only leaf nodes, SELF_FIRST, the
      * default, visits a node before its children, and CHILD_FIRST visits the children before the
      * node itself.
      *
-     * @param RecursiveIterator<K, V>|IteratorAggregate<K, V> $it
+     * @param RecursiveIterator<K, V>|IteratorAggregate<K, V> $iterator
      * @param int $flags
-     * @param RecursiveTreeIterator::CATCH_GET_CHILD $cit_flags
+     * @param RecursiveTreeIterator::CATCH_GET_CHILD $cachingIteratorFlags
      * @param RecursiveTreeIterator::LEAVES_ONLY|RecursiveTreeIterator::SELF_FIRST|RecursiveTreeIterator::CHILD_FIRST $mode
      */
     public function __construct(
-        $it,
+        $iterator,
         int $flags = self::BYPASS_KEY,
-        int $cit_flags = self::CATCH_GET_CHILD,
+        int $cachingIteratorFlags = self::CATCH_GET_CHILD,
         int $mode = self::SELF_FIRST,
     ) {}
 
@@ -1141,71 +1152,67 @@ class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIt
  */
 class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Countable
 {
+    public function __serialize(): array {}
+
+    public function __unserialize(array $data): void {}
+
     const STD_PROP_LIST = 1;
     const ARRAY_AS_PROPS = 2;
 
     /**
      * Constructs an ArrayObject wrapping $array -- an array, or an object's public properties -- as
      * its initial contents. $flags selects ArrayObject::ARRAY_AS_PROPS or
-     * ArrayObject::STD_PROP_LIST behaviour, and $iterator_class names the class getIterator()
+     * ArrayObject::STD_PROP_LIST behaviour, and $iteratorClass names the class getIterator()
      * instantiates, ArrayIterator by default.
      *
-     * @param array<K, V>|object $input
+     * @param array<K, V>|object $array
      * @param int $flags
-     * @param class-string<ArrayIterator<K,V>>|class-string<ArrayObject<K,V>> $iterator_class
+     * @param class-string<ArrayIterator> $iteratorClass
      */
-    public function __construct($input = null, $flags = 0, $iterator_class = 'ArrayIterator') {}
+    public function __construct($array = [], $flags = 0, $iteratorClass = 'ArrayIterator') {}
 
     /**
-     * Called by PHP for isset($obj[$offset]) and empty($obj[$offset]); returns whether an entry
+     * Called by PHP for isset($obj[$key]) and empty($obj[$key]); returns whether an entry
      * exists at that offset.
      *
-     * @param K $offset
+     * @param K $key
      *
      * @return bool
-     *
-     * @no-named-arguments
      */
-    public function offsetExists($offset) {}
+    public function offsetExists($key) {}
 
     /**
-     * Called by PHP for $obj[$offset]; returns the entry stored at that offset.
+     * Called by PHP for $obj[$key]; returns the entry stored at that offset.
      *
-     * @param K $offset
+     * @param K $key
      *
      * @return V
-     *
-     * @no-named-arguments
      */
-    public function offsetGet($offset) {}
+    public function offsetGet($key) {}
 
     /**
-     * Called by PHP for $obj[$offset] = $value; stores $value at $offset, or appends it when
-     * $offset is null, as with $obj[] = $value.
+     * Called by PHP for $obj[$key] = $value; stores $value at $key, or appends it when
+     * $key is null, as with $obj[] = $value.
      *
      * @code
      * $obj[] = $value; // same as offsetSet(null, $value)
      * @endcode
      *
-     * @param K $offset
+     * @param K $key
      * @param V $value
      *
      * @return void
-     *
-     * @no-named-arguments
      */
-    public function offsetSet($offset, $value) {}
+    public function offsetSet($key, $value) {}
 
     /**
-     * Called by PHP for unset($obj[$offset]); removes the entry stored at that offset.
+     * Called by PHP for unset($obj[$key]); removes the entry stored at that offset.
      *
-     * @param K $offset
+     * @param K $key
      *
      * @return void
-     *
-     * @no-named-arguments
      */
-    public function offsetUnset($offset) {}
+    public function offsetUnset($key) {}
 
     /**
      * Appends $value to the end of the ArrayObject, equivalent to $obj[] = $value.
@@ -1257,38 +1264,42 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
     /**
      * Sorts the entries by value in place, preserving key associations.
      *
+     * @param int $flags
+     *
      * @return void
      */
-    public function asort() {}
+    public function asort($flags = 0) {}
 
     /**
      * Sorts the entries by key in place.
      *
+     * @param int $flags
+     *
      * @return void
      */
-    public function ksort() {}
+    public function ksort($flags = 0) {}
 
     /**
-     * Sorts the entries by value in place using $cmp_function, preserving key associations; the
+     * Sorts the entries by value in place using $callback, preserving key associations; the
      * callback returns a negative, zero, or positive integer depending on whether its first
      * argument sorts before, equal to, or after its second.
      *
-     * @param (callable(V, V): int) $cmp_function
+     * @param (callable(V, V): int) $callback
      *
      * @return void
      */
-    public function uasort($cmp_function) {}
+    public function uasort($callback) {}
 
     /**
-     * Sorts the entries by key in place using $cmp_function; the callback returns a negative, zero,
+     * Sorts the entries by key in place using $callback; the callback returns a negative, zero,
      * or positive integer depending on whether its first argument sorts before, equal to, or after
      * its second.
      *
-     * @param (callable(K, K):int) $cmp_function
+     * @param (callable(K, K):int) $callback
      *
      * @return void
      */
-    public function uksort($cmp_function) {}
+    public function uksort($callback) {}
 
     /**
      * Sorts the entries by value in place using a natural-order comparison, so a value such as
@@ -1307,13 +1318,13 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
 
     /**
      * Called by PHP when restoring a previously serialised ArrayObject; rebuilds its state from
-     * $serialized.
+     * $data.
      *
-     * @param string $serialized
+     * @param string $data
      *
      * @return void
      */
-    public function unserialize($serialized) {}
+    public function unserialize($data) {}
 
     /**
      * Called by PHP when serialising the object, for example via serialize(); returns a string
@@ -1332,28 +1343,28 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
     public function getIterator() {}
 
     /**
-     * Replaces the ArrayObject's entries with $input, and returns the entries it held immediately
+     * Replaces the ArrayObject's entries with $array, and returns the entries it held immediately
      * before the exchange rather than the new ones.
      *
      * @code
      * $old = $obj->exchangeArray($new); // $old is what $obj contained before
      * @endcode
      *
-     * @param mixed $input
+     * @param mixed $array
      *
      * @return array
      */
-    public function exchangeArray($input) {}
+    public function exchangeArray($array) {}
 
     /**
      * Sets, in place, the class that getIterator() instantiates; it must be ArrayIterator or a
      * subclass of it.
      *
-     * @param class-string<ArrayIterator<K,V>>|class-string<ArrayObject<K,V>> $iterator_class
+     * @param class-string<ArrayIterator> $iteratorClass
      *
      * @return void
      */
-    public function setIteratorClass($iterator_class) {}
+    public function setIteratorClass($iteratorClass) {}
 
     /**
      * Returns the class name that getIterator() currently instantiates.
@@ -1372,6 +1383,10 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
  */
 class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Countable
 {
+    public function __serialize(): array {}
+
+    public function __unserialize(array $data): void {}
+
     const STD_PROP_LIST = 1;
     const ARRAY_AS_PROPS = 2;
 
@@ -1383,29 +1398,29 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
 
     /**
      * Reports whether the given offset exists in the underlying array. Called by PHP when isset()
-     * or empty() is used on the iterator with array syntax, such as isset($iterator[$offset]).
+     * or empty() is used on the iterator with array syntax, such as isset($iterator[$key]).
      *
-     * @param K $offset
+     * @param K $key
      *
      * @return bool
      */
-    public function offsetExists($offset) {}
+    public function offsetExists($key) {}
 
     /**
      * Returns the value stored at the given offset. Called by PHP for array-style access, such as
-     * $iterator[$offset]. Returns null if the offset does not exist.
+     * $iterator[$key]. Returns null if the offset does not exist.
      *
-     * @param K $offset
+     * @param K $key
      *
      * @return V|null
      *
      * @ignore-nullable-return
      */
-    public function offsetGet($offset) {}
+    public function offsetGet($key) {}
 
     /**
      * Sets the value at the given offset, creating it if it does not already exist. Called by PHP
-     * for array-style assignment, such as $iterator[$offset] = $value; passing null as the offset
+     * for array-style assignment, such as $iterator[$key] = $value; passing null as the offset
      * appends the value instead, exactly as $iterator[] = $value does. Mutates the receiver and
      * returns nothing.
      *
@@ -1413,23 +1428,23 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * $iterator[] = $value; // same as $iterator->offsetSet(null, $value)
      * @endcode
      *
-     * @param K $offset
+     * @param K $key
      *
      * @param V $value
      *
      * @return void
      */
-    public function offsetSet($offset, $value) {}
+    public function offsetSet($key, $value) {}
 
     /**
      * Removes the element at the given offset from the underlying array. Called by PHP for
-     * unset($iterator[$offset]).
+     * unset($iterator[$key]).
      *
-     * @param K $offset
+     * @param K $key
      *
      * @return void
      */
-    public function offsetUnset($offset) {}
+    public function offsetUnset($key) {}
 
     /**
      * Appends a value to the end of the underlying array, equivalent to $iterator[] = $value.
@@ -1483,38 +1498,42 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * Sorts the underlying array in place by value, preserving key associations, as with the
      * asort() function.
      *
+     * @param int $flags
+     *
      * @return void
      */
-    public function asort() {}
+    public function asort($flags = 0) {}
 
     /**
      * Sorts the underlying array in place by key, as with the ksort() function.
      *
+     * @param int $flags
+     *
      * @return void
      */
-    public function ksort() {}
+    public function ksort($flags = 0) {}
 
     /**
      * Sorts the underlying array in place by value using a user-supplied comparison callback,
      * preserving key associations, as with the uasort() function. The callback receives two values
      * and must return a negative, zero, or positive integer according to their order.
      *
-     * @param (callable(V,V): int) $cmp_function
+     * @param (callable(V,V): int) $callback
      *
      * @return void
      */
-    public function uasort($cmp_function) {}
+    public function uasort($callback) {}
 
     /**
      * Sorts the underlying array in place by key using a user-supplied comparison callback, as with
      * the uksort() function. The callback receives two keys and must return a negative, zero, or
      * positive integer according to their order.
      *
-     * @param (callable(K,K): int) $cmp_function
+     * @param (callable(K,K): int) $callback
      *
      * @return void
      */
-    public function uksort($cmp_function) {}
+    public function uksort($callback) {}
 
     /**
      * Sorts the underlying array in place by value using a case-sensitive natural-order comparison,
@@ -1537,11 +1556,11 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * serialize(). Called automatically by PHP when an instance is recreated through the
      * unserialize() function.
      *
-     * @param string $serialized
+     * @param string $data
      *
      * @return void
      */
-    public function unserialize($serialized) {}
+    public function unserialize($data) {}
 
     /**
      * Returns a string representation of the underlying array for use by PHP's serialize()
@@ -1889,7 +1908,7 @@ class SplFileInfo implements Stringable
  */
 class DirectoryIterator extends SplFileInfo implements SeekableIterator
 {
-    public function __construct(string $path) {}
+    public function __construct(string $directory) {}
 
     /**
      * Returns the current directory entry. Called automatically by PHP's foreach when the object is
@@ -1954,6 +1973,7 @@ class DirectoryIterator extends SplFileInfo implements SeekableIterator
  */
 class FilesystemIterator extends DirectoryIterator implements Iterator
 {
+    const OTHER_MODE_MASK = 28672;
     const CURRENT_AS_PATHNAME = 32;
     const CURRENT_AS_FILEINFO = 0;
     const CURRENT_AS_SELF = 16;
@@ -1967,7 +1987,7 @@ class FilesystemIterator extends DirectoryIterator implements Iterator
     const UNIX_PATHS = 8192;
 
     public function __construct(
-        string $path,
+        string $directory,
         int $flags = self::KEY_AS_PATHNAME | self::CURRENT_AS_FILEINFO | self::SKIP_DOTS,
     ) {}
 
@@ -2029,7 +2049,7 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
     const SKIP_DOTS = 4096;
     const UNIX_PATHS = 8192;
 
-    public function __construct(string $path, int $flags = self::KEY_AS_PATHNAME | self::CURRENT_AS_FILEINFO) {}
+    public function __construct(string $directory, int $flags = self::KEY_AS_PATHNAME | self::CURRENT_AS_FILEINFO) {}
 
     public function getChildren(): RecursiveDirectoryIterator {}
 
@@ -2062,6 +2082,8 @@ class RecursiveDirectoryIterator extends FilesystemIterator implements Recursive
  */
 class GlobIterator extends FilesystemIterator implements Countable
 {
+    public function __construct(string $pattern, int $flags = FilesystemIterator::KEY_AS_PATHNAME | FilesystemIterator::CURRENT_AS_FILEINFO) {}
+
     /**
      * @return int<0, max>
      */
@@ -2575,6 +2597,10 @@ class SplStack extends SplDoublyLinkedList
  */
 abstract class SplHeap implements Iterator, Countable
 {
+    public function __serialize(): array {}
+
+    public function __unserialize(array $data): void {}
+
     /**
      * @return V
      */
@@ -2815,6 +2841,10 @@ class SplMaxHeap extends SplHeap
  */
 class SplPriorityQueue implements Iterator, Countable
 {
+    public function __serialize(): array {}
+
+    public function __unserialize(array $data): void {}
+
     public const EXTR_BOTH = 3;
     public const EXTR_PRIORITY = 2;
     public const EXTR_DATA = 1;
@@ -3587,7 +3617,7 @@ function iterator_apply(Traversable $iterator, callable $callback, ?array $args 
  *
  * @param object|class-string $object_or_class
  *
- * @return array<class-string, class-string>|false
+ * @return ($object_or_class is object ? array<class-string, class-string> : array<class-string, class-string>|false)
  *
  * @pure
  */
@@ -3600,7 +3630,7 @@ function class_parents($object_or_class, bool $autoload = true): array|false {}
  *
  * @param object|class-string $object_or_class
  *
- * @return array<trait-string, trait-string>|false
+ * @return ($object_or_class is object ? array<trait-string, trait-string> : array<trait-string, trait-string>|false)
  *
  * @pure
  */

@@ -565,6 +565,10 @@ const IMAGETYPE_COUNT = 20;
 
 const IMAGETYPE_AVIF = 19;
 
+const IMAGETYPE_HEIF = 20;
+
+const IMAGETYPE_SVG = 21;
+
 const DNS_A = 1;
 
 const DNS_CAA = 8192;
@@ -2037,7 +2041,7 @@ function explode(string $separator, string $string, int $limit = PHP_INT_MAX): a
  *
  * @pure
  */
-function implode(array|string $separator = '', ?array $array = null): string {}
+function implode(array|string $separator, ?array $array = null): string {}
 
 /**
  * Joins the elements of an array into a string, with each element separated by the given separator;
@@ -5510,7 +5514,7 @@ function array_replace_recursive(array $array, array ...$replacements): array {}
  * @param V $filter_value
  * @param bool $strict
  *
- * @return ($array is non-empty-array|non-empty-list ? non-empty-list<K> : list<K>)
+ * @return ($filter_value is null ? ($array is non-empty-array|non-empty-list ? non-empty-list<K> : list<K>) : list<K>)
  *
  * @pure
  */
@@ -6153,6 +6157,13 @@ function get_resource_id($resource): int {}
  * callback, in any of the following arrays. $rest holds one or more comparison arrays followed by
  * the callback itself as its final element.
  *
+ * @template K as array-key
+ * @template V
+ *
+ * @param array<K, V> $array
+ *
+ * @return array<K, V>
+ *
  * @no-named-arguments
  */
 function array_diff_ukey(array $array, ...$rest): array {}
@@ -6166,6 +6177,13 @@ function array_diff_ukey(array $array, ...$rest): array {}
  * array_udiff($a, $b, $c, fn($x, $y) => $x <=> $y);
  * @endcode
  *
+ * @template K as array-key
+ * @template V
+ *
+ * @param array<K, V> $array
+ *
+ * @return array<K, V>
+ *
  * @no-named-arguments
  */
 function array_udiff(array $array, ...$rest): array {}
@@ -6177,6 +6195,13 @@ function array_udiff(array $array, ...$rest): array {}
  * like the comparator passed to usort(): values are treated as equal exactly when it returns zero.
  * The result keeps the entries of array that have no equal, same-keyed match in any of the other
  * arrays.
+ *
+ * @template K as array-key
+ * @template V
+ *
+ * @param array<K, V> $array
+ *
+ * @return array<K, V>
  *
  * @no-named-arguments
  */
@@ -6193,6 +6218,13 @@ function array_udiff_assoc(array $array, ...$rest): array {}
  * array_diff_uassoc($array1, $array2, fn($a, $b) => strcasecmp($a, $b));
  * @endcode
  *
+ * @template K as array-key
+ * @template V
+ *
+ * @param array<K, V> $array
+ *
+ * @return array<K, V>
+ *
  * @no-named-arguments
  */
 function array_diff_uassoc(array $array, ...$rest): array {}
@@ -6206,6 +6238,13 @@ function array_diff_uassoc(array $array, ...$rest): array {}
  * @code
  * array_udiff_uassoc($array1, $array2, $valueCompare, $keyCompare);
  * @endcode
+ *
+ * @template K as array-key
+ * @template V
+ *
+ * @param array<K, V> $array
+ *
+ * @return array<K, V>
  *
  * @no-named-arguments
  */
@@ -6222,6 +6261,13 @@ function array_udiff_uassoc(array $array, ...$rest): array {}
  * array_uintersect_assoc($prices, $discounted, fn($a, $b) => $a <=> $b);
  * @endcode
  *
+ * @template K as array-key
+ * @template V
+ *
+ * @param array<K, V> $array
+ *
+ * @return array<K, V>
+ *
  * @no-named-arguments
  */
 function array_uintersect_assoc(array $array, ...$rest): array {}
@@ -6229,6 +6275,13 @@ function array_uintersect_assoc(array $array, ...$rest): array {}
 /**
  * Like array_intersect_assoc(), but keys across the arrays are compared with a user-supplied
  * callback instead of the default comparison; values are still compared by casting to string.
+ *
+ * @template K as array-key
+ * @template V
+ *
+ * @param array<K, V> $array
+ *
+ * @return array<K, V>
  *
  * @no-named-arguments
  */
@@ -6243,6 +6296,13 @@ function array_intersect_uassoc(array $array, ...$rest): array {}
  * array_uintersect_uassoc($a, $b, $valueCompare, $keyCompare);
  * @endcode
  *
+ * @template K as array-key
+ * @template V
+ *
+ * @param array<K, V> $array
+ *
+ * @return array<K, V>
+ *
  * @no-named-arguments
  */
 function array_uintersect_uassoc(array $array, ...$rest): array {}
@@ -6255,6 +6315,13 @@ function array_uintersect_uassoc(array $array, ...$rest): array {}
  * @code
  * array_intersect_ukey($a, $b, fn($k1, $k2) => $k1 <=> $k2);
  * @endcode
+ *
+ * @template K as array-key
+ * @template V
+ *
+ * @param array<K, V> $array
+ *
+ * @return array<K, V>
  *
  * @no-named-arguments
  */
@@ -6269,6 +6336,13 @@ function array_intersect_ukey(array $array, ...$rest): array {}
  * @code
  * array_uintersect($a, $b, fn($x, $y) => $x <=> $y);
  * @endcode
+ *
+ * @template K as array-key
+ * @template V
+ *
+ * @param array<K, V> $array
+ *
+ * @return array<K, V>
  *
  * @no-named-arguments
  */
@@ -6653,7 +6727,7 @@ function array_fill_keys(array $keys, mixed $value): array {}
  * @param array<K, V> $array
  * @param V ...$values
  *
- * @param-out ($array is list<V> ? non-empty-list<V> : non-empty-array<K, V>) $array
+ * @param-out ($array is list<V> ? non-empty-list<V> : non-empty-array<K|non-negative-int, V>) $array
  *
  * @return int<1, max>
  *
@@ -6885,17 +6959,16 @@ function metaphone(string $string, int $max_phonemes = 0): string {}
  * @template K
  * @template V
  * @template T
- * @template O
  *
  * @param object|array<K, V> $array
- * @param (callable(V, K, T): O) $callback
+ * @param (callable(V, K, T): mixed) $callback
  * @param T|null $arg
  *
  * @param-out ($array is object ? object : (
  *    $array is list<V> ? (
- *      $array is non-empty-list<V> ? non-empty-list<O> : list<O>
+ *      $array is non-empty-list<V> ? non-empty-list<V> : list<V>
  *    ) : (
- *      $array is non-empty-array<K, V> ? non-empty-array<K, O> : array<K, O>
+ *      $array is non-empty-array<K, V> ? non-empty-array<K, V> : array<K, V>
  *    )
  * )) $array
  */
@@ -6910,6 +6983,19 @@ function array_walk(object|array &$array, callable $callback, mixed $arg = null)
  * @code
  * array_walk_recursive($data, function (&$value) { $value = trim($value); });
  * @endcode
+ *
+ * @template K
+ * @template V
+ *
+ * @param object|array<K, V> $array
+ *
+ * @param-out ($array is object ? object : (
+ *    $array is list<V> ? (
+ *      $array is non-empty-list<V> ? non-empty-list<V> : list<V>
+ *    ) : (
+ *      $array is non-empty-array<K, V> ? non-empty-array<K, V> : array<K, V>
+ *    )
+ * )) $array
  */
 function array_walk_recursive(object|array &$array, callable $callback, mixed $arg = null): true {}
 
@@ -6922,7 +7008,7 @@ function array_walk_recursive(object|array &$array, callable $callback, mixed $a
  *
  * @return int<0, max>
  */
-function extract(array &$array, int $flags = EXTR_OVERWRITE, string $prefix = ''): int {}
+function extract(array $array, int $flags = EXTR_OVERWRITE, string $prefix = ''): int {}
 
 /**
  * Builds an array from the current scope's variables, using the given names as keys. Names that are
@@ -6986,7 +7072,7 @@ function array_multisort(array &$array, array|int &...$rest): bool {}
  * @param array<K, V> $array
  * @param V ...$values
  *
- * @param-out ($array is list<V> ? non-empty-list<V> : non-empty-array<K, V>) $array
+ * @param-out ($array is list<V> ? non-empty-list<V> : non-empty-array<K|non-negative-int, V>) $array
  *
  * @return int<1, max>
  *
@@ -7012,7 +7098,7 @@ function array_unshift(array &$array, mixed ...$values): int {}
  *
  * @param-out (
  *   $replacement is array<ReplacementKey, ReplacementValue> ? (
- *     $array is list<InputValue> ? (
+ *     $array is array<int, InputValue> ? (
  *       $replacement is list<ReplacementValue> ? (
  *         $replacement is non-empty-list<ReplacementValue> ? non-empty-list<InputValue|ReplacementValue> : list<InputValue|ReplacementValue>
  *       ) : (
@@ -7031,14 +7117,14 @@ function array_unshift(array &$array, mixed ...$values): int {}
  *     )
  *   ) : (
  *     $replacement is list<never>|array{} ? (
- *       $array is list<InputValue> ? list<InputValue> : array<InputKey, InputValue>
+ *       $array is array<int, InputValue> ? list<InputValue> : array<InputKey, InputValue>
  *     ) : (
- *       $array is list<InputValue> ? non-empty-list<InputValue|ReplacementScalar> : non-empty-array<InputKey|int, InputValue|ReplacementScalar>
+ *       $array is array<int, InputValue> ? non-empty-list<InputValue|ReplacementScalar> : non-empty-array<InputKey|int, InputValue|ReplacementScalar>
  *     )
  *   )
  * ) $array
  *
- * @return ($array is list<InputValue> ? list<InputValue> : array<InputKey, InputValue>)
+ * @return ($array is array<int, InputValue> ? list<InputValue> : array<InputKey, InputValue>)
  *
  * @pure
  */

@@ -90,13 +90,13 @@ fn the_local_delta_is_the_one_that_was_recorded() {
     );
 
     expect![[r#"
-        core.php +686 -0
+        core.php +682 -3
         ctype.php +35 -0
-        date.php +566 -14
-        dom.php +616 -33
+        date.php +565 -14
+        dom.php +613 -33
         fileinfo.php +38 -0
         filter.php +30 -0
-        hash.php +97 -0
+        hash.php +96 -1
         iconv.php +60 -0
         imagick.php +13 -17
         intl.php +0 -8
@@ -112,9 +112,9 @@ fn the_local_delta_is_the_one_that_was_recorded() {
         reflection.php +971 -4
         session.php +192 -0
         simple-xml.php +171 -0
-        spl.php +1388 -1
+        spl.php +1384 -1
         sqlite3.php +121 -0
-        standard.php +2392 -12
+        standard.php +2383 -19
         tokenizer.php +42 -0
         xml.php +92 -0
         xmlreader.php +143 -3
@@ -123,7 +123,7 @@ fn the_local_delta_is_the_one_that_was_recorded() {
         zlib.php +138 -0
         swoole.php is in upstream and not in the vendored set
 
-        31 files differ, 9865 lines ours
+        31 files differ, 9843 lines ours
     "#]]
     .assert_eq(&rendered);
 }

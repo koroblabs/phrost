@@ -234,8 +234,10 @@ interface Throwable extends Stringable
 
 class Exception implements Throwable
 {
+    /** @var string */
     protected $message;
 
+    /** @var int */
     protected $code;
 
     protected string $file;
@@ -331,8 +333,10 @@ class Exception implements Throwable
 
 class Error implements Throwable
 {
+    /** @var string */
     protected $message;
 
+    /** @var int */
     protected $code;
 
     protected string $file;
@@ -448,6 +452,8 @@ class DivisionByZeroError extends ArithmeticError {}
 
 #[Mago\AvailableSince(80000)]
 class UnhandledMatchError extends Error {}
+
+class ClosedGeneratorException extends Exception {}
 
 #[Mago\AvailableSince(80400)]
 class RequestParseBodyException extends Exception {}
@@ -1013,6 +1019,9 @@ final class SensitiveParameter
     public function __construct() {}
 }
 
+/**
+ * @template-covariant T
+ */
 #[Mago\AvailableSince(80200)]
 final class SensitiveParameterValue
 {
@@ -1021,11 +1030,15 @@ final class SensitiveParameterValue
     /**
      * Wraps a sensitive parameter's real value so it can be hidden from stack traces while
      * remaining retrievable by code that needs it.
+     *
+     * @param T $value
      */
     public function __construct(mixed $value) {}
 
     /**
      * Returns the original, unredacted value that was passed to the sensitive parameter.
+     *
+     * @return T
      */
     public function getValue(): mixed {}
 

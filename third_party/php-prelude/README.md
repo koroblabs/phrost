@@ -7,7 +7,7 @@ unresolvable — and the index has no fallback that would hide it.
 
 ## Provenance
 
-Vendored from [mago](https://github.com/carthage-software/mago) `mago-prelude` 1.58.2
+Vendored from [mago](https://github.com/carthage-software/mago) `mago-prelude` 1.60.1
 (`assets/extensions/*.php` plus `assets/mago.php`), licensed MIT OR Apache-2.0 — the same terms as
 this project.
 
@@ -21,7 +21,7 @@ found the normal state.
 that what this project changed is an artifact rather than a memory:
 
 ```
-just stubs-diff     the whole local delta -- 9 865 lines across 31 files
+just stubs-diff     the whole local delta -- 9 843 lines across 31 files
 just stubs-accept   re-record it after a deliberate edit
 ```
 
@@ -68,6 +68,25 @@ for anything else; read with the narrower tag, a nullable value handed to either
 times on Symfony and Laravel, none of them a bug. And `SoapVar`'s `$typeName` defaults to null.
 Findings elsewhere unchanged; the one new shape it exposed -- an unsettled conditional whose
 branches share an operand read `A|A|false` -- was phrost's to fix, not the set's.
+
+1.58.2 to 1.60.1 was the largest step since the set was vendored: 549 lines across 21 files and one
+new file, `filter_exceptions.php`. Most of it is PHP 8.4 and 8.5 arriving -- `CurlSharePersistentHandle`,
+`ReflectionConstant`'s methods, `opcache_is_script_cached_in_file_cache()`, optional parameters on
+the `ldap_*`, `openssl_*` and `grapheme_*` functions -- and the SPL classes catching up with PHP 8's
+own parameter names (`ArrayObject::offsetGet($key)`, `RegexIterator($iterator, $pattern)`), which is
+what a named argument is checked against. Forty-two conflicts with the local delta, nearly all of
+them prose of ours beside a tag of theirs, resolved by keeping both and renaming the prose with the
+parameters. `DOMXPath::query()`'s return is upstream's own now, as this set wrote it, and
+`ctype_digit()` lost its `@assert-if-true numeric-string`, which this set follows: a string a
+`false` answer rejects can still be numeric (`"1.5"`). Three hunks are declined and one family of
+edits kept over upstream's, each with its reason under Local edits.
+
+Measured over the findings of nine corpora: Symfony **-10** (the persistent curl handle twice,
+`ldap_bind()` with one argument twice, `__serialize()`/`__unserialize()` on `ArrayObject` and
+`ArrayIterator` five times, and `class_parents()` of an object, which can no longer be `false`), and
+**+3** on Symfony and Laravel from `Exception::$message` and `$code` being typed at last: two test
+doubles that write a `?string` or a `'HY000'` into them, which PHPStan reports with the same stubs.
+Every other corpus and the reference project unchanged. The set's own 86 findings are the same 86.
 
 Chosen over phpstorm-stubs for two reasons: it is an eighth of the size (1.2 MB against 9.7 MB, one
 file per extension rather than 546), and its types are precise where php.net's prose stubs are not
@@ -229,7 +248,9 @@ like a stub that does not work, and only a sentence can say which.
   -- PHP attaches the nearer block and so does every other tool. `DOMNode::appendChild()` had
   `/** @return DOMNode|false */` above its prose block and no native return type either, so it was
   completely untyped, and with it every chain through it. Thirty-three of the forty are `dom.php`,
-  three each `date.php` and `xmlreader.php`, one `spl.php`. The tags are merged into the block that
+  three each `date.php` and `xmlreader.php`, one `spl.php`. 1.60.0 brought four more, the same
+  artifact on `ArrayObject`'s and `ArrayIterator`'s `asort()`/`ksort()`: a `@param int $flags`
+  block under the one that carried `@return void`. The tags are merged into the block that
   keeps them; `no_declaration_carries_two_docblocks` counts them back to zero, so a re-vendor that
   reintroduces the generator's artifact fails rather than silently dropping the tags again.
   **Worth reporting upstream.**
@@ -286,10 +307,10 @@ like a stub that does not work, and only a sentence can say which.
   axis does produce one: with the union, every `removeChild($node)` over an element query reported
   an `incompatible-argument` for a node that query cannot return. What PHPStan's stubs declare,
   which is what the reference project's CI judges it by; phpstorm-stubs keeps the union.
-  **Worth reporting upstream.**
+  **Taken upstream in 1.60.0**, in exactly this spelling, so it is no longer part of the delta.
 
-- **`preg_replace` keeps 1.48.0's unkeyed `@param`/`@return`** (`pcre.php`), which is the one place
-  this set is deliberately *behind* upstream rather than ahead of it. 1.50.0 added
+- **`preg_replace` keeps 1.48.0's unkeyed `@param`/`@return`** (`pcre.php`), the first place this
+  set is deliberately *behind* upstream rather than ahead of it. 1.50.0 added
   `@template K of array-key` so that `preg_replace($p, $r, $subject)` hands back an array keyed the
   way `$subject` was -- a real improvement, and one phrost cannot read: a free function whose return
   names its own template answers **nothing at all**, so the declaration's native `string|array|null`
@@ -303,6 +324,33 @@ like a stub that does not work, and only a sentence can say which.
   corpora. So this is one hunk of three, declined with a number beside it. Take it the moment the
   key half of `ReturnBranch::ArgumentElement` exists; `docs/08-types.md` holds the four-arm probe
   that names the gap.
+
+- **Three of 1.60.0's declarations are declined for the same reason as `preg_replace`**: each is
+  more precise than what it replaces and is spelled in a shape phrost does not read yet, so taking
+  it would answer less, not more. Measured with each taken, over nine corpora:
+
+  - `get_class()` as `@template T of object` with `@return class-string<T>` (`core.php`). A free
+    function whose return names its own template answers nothing, so every `get_class($x)` fell
+    from `class-string` to the native `string` -- 53 assignments across Laravel, WordPress, Symfony
+    and BookStack, among them `get_class($this)`. Kept at 1.58.2's `@return class-string`.
+  - `exec()`'s `$output` as `@param array<K, V>|null` with a conditional `@param-out` on whether it
+    was empty (`standard.php`). The conditional is not settled for a variable the call itself
+    creates, so `exec('find ...', $packages); foreach ($packages as ...)` read `?array` again, and
+    the input-side `@param` reported a `$output = ''` passed in, which PHP replaces with an array
+    rather than refusing: five findings on Symfony, none of them real. Kept at
+    `@param-out list<string>`.
+  - `array_chunk()` returning `list<non-empty-array<K, V>>` (`standard.php`). With
+    `$preserve_keys` set, the chunks of a `PromiseInterface[]` came back `array` on the reference
+    project rather than `PromiseInterface[][]`. Kept at `list<array<K, V>>`, which loses only the
+    emptiness of a chunk.
+
+  Take each the moment phrost reads its shape -- the template in a free function's return is the
+  one `preg_replace` is waiting on too.
+
+- **`hash()`, `sha1()`, `md5()` and their `_file` forms stay `non-falsy-string`** (`hash.php`,
+  `standard.php`), where 1.60.0 added `non-empty-string`. Both are true; this set's is the stronger
+  claim, and the true one: the shortest digest PHP produces is four bytes (`crc32b`, `adler32`,
+  `fnv132`), so none is ever `"0"`, in hex or in binary. **Worth reporting upstream.**
 
 - **`preg_match_all()`'s `$matches` names no keys** (`pcre.php`), where the set has
   `list<array<string>>`. That is the shape of `PREG_SET_ORDER` only: the default
