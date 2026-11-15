@@ -1,52 +1,14 @@
-//! The parentheses PHP needs that the formatter takes away.
+//! The parentheses a formatted file has to keep, and the formatter does not.
 //!
-//! PHP reads the right-hand side of `instanceof` as a class reference and anything else only
-//! between parentheses; mago keeps them for a class constant and nowhere else, so
-//! `$job instanceof ((string) $jobToFake)` in Laravel's `QueueFake` came back as
-//! `$job instanceof (string) $jobToFake`, which PHP refuses outright.
-//!
-//! Put back rather than refused: the formatter is right about everything else in the file, and a
-//! file that formats except for one expression is better served by the expression keeping what it
-//! was written with than by being left unformatted. Which operands need them is the parser's rule
-//! -- see `phrost_syntax`'s `refused` -- so the two cannot disagree.
+//! An arithmetic chain's: mago lays one out flat and drops the parentheses that grouped it, which
+//! changes what a line computes -- see [`grouping_kept`]. The right-hand side of `instanceof` was
+//! the other case until mago 1.60, which keeps every parenthesis PHP needs there; putting them back
+//! from here was deleted with that release. Were it to drop them again, the reprint would not parse
+//! by PHP's rules, and the guard in `format` refuses a reprint like that rather than handing it back.
 
 use mago_syntax::cst::{Binary, Expression, Node, Program};
 use mago_syntax::token::{GetPrecedence, Precedence};
 use phrost_syntax::ParseSession;
-
-/// `text` with the parentheses back around every `instanceof` right-hand side that needs them, or
-/// `None` when there is none to put back.
-pub(super) fn restored(text: &str) -> Option<String> {
-    if !text.contains("instanceof") {
-        return None;
-    }
-    let session = ParseSession::new();
-    let operands = session.parse(text).bare_instanceof_operands();
-    if operands.is_empty() {
-        return None;
-    }
-
-    // Every insertion from the end of the text back, so an offset still to be used is never moved
-    // by one already made -- nested ranges included.
-    let mut insertions: Vec<(usize, char)> = operands
-        .into_iter()
-        .flat_map(|range| {
-            [
-                (usize::from(range.start()), '('),
-                (usize::from(range.end()), ')'),
-            ]
-        })
-        .collect();
-    insertions.sort_by_key(|(at, _)| std::cmp::Reverse(*at));
-    let mut out = text.to_owned();
-    for (at, parenthesis) in insertions {
-        if !out.is_char_boundary(at) {
-            return None;
-        }
-        out.insert(at, parenthesis);
-    }
-    Some(out)
-}
 
 /// Whether `printed` keeps every parenthesis of `written` that decides how an arithmetic chain
 /// groups.

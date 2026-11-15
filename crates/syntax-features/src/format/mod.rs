@@ -286,8 +286,7 @@ fn reprinted(text: &str, target: FormatTarget) -> Option<String> {
         FormatStyle::Drupal => drupal::respelled(formatted),
         _ => formatted.to_owned(),
     };
-    // Each pass, so every text the settling loop compares is one PHP would accept -- see `parens`.
-    Some(parens::restored(&respelled).unwrap_or(respelled))
+    Some(respelled)
 }
 
 /// The smallest replacement that turns `text` into `formatted`.
@@ -398,10 +397,10 @@ mod tests {
     /// The right-hand side of `instanceof` keeps its parentheses wherever PHP needs them.
     ///
     /// PHP takes a class name or a variable there and anything else only in parentheses, and mago
-    /// keeps them for a class constant alone: `$job instanceof ((string) $jobToFake)` in Laravel's
-    /// `QueueFake` came back as `$job instanceof (string) $jobToFake`, which PHP refuses -- and the
-    /// guard against a reprint that does not parse let it through, because mago's parser accepts
-    /// it. Found by comparing what a reprinted checkout *means* with what it meant.
+    /// before 1.60 kept them for a class constant alone: `$job instanceof ((string) $jobToFake)` in
+    /// Laravel's `QueueFake` came back as `$job instanceof (string) $jobToFake`, which PHP refuses.
+    /// Found by comparing what a reprinted checkout *means* with what it meant, and put back here
+    /// until mago kept them itself; the test now holds mago to it, in both styles.
     #[test]
     fn an_instanceof_keeps_the_parentheses_php_needs() {
         let source = "<?php\n\nfunction f(object $job, mixed $class, array $classes): bool\n{\n    return $job instanceof ((string) $class)\n        || $job instanceof (get_class($job))\n        || $job instanceof ('Foo')\n        || $job instanceof ($classes[0])\n        || $job instanceof (Foo::class);\n}\n";
@@ -420,6 +419,15 @@ mod tests {
             }
         "#]]
         .assert_eq(&formatted(source, FormatStyle::Default));
+        let drupal = formatted(source, FormatStyle::Drupal);
+        for kept in [
+            "instanceof ((string) $class)",
+            "instanceof (get_class($job))",
+            "instanceof ('Foo')",
+            "instanceof (Foo::class)",
+        ] {
+            assert!(drupal.contains(kept), "{kept} lost from:\n{drupal}");
+        }
     }
 
     /// Text outside the PHP tags is output, so a reprint leaves every byte of it -- a trailing blank

@@ -219,14 +219,6 @@ impl<'a> ParsedFile<'a> {
         !self.reported.is_empty()
     }
 
-    /// The right-hand sides of `instanceof` written without the parentheses PHP needs there.
-    ///
-    /// One of the shapes [`Self::errors`] reports, as ranges, for the formatter: mago's drops those
-    /// parentheses, and putting them back from this list keeps one rule in one place.
-    pub fn bare_instanceof_operands(&self) -> Vec<phrost_model::TextRange> {
-        crate::refused::bare_instanceof_operands(self.program, self.source)
-    }
-
     /// Syntax errors, as phrost values with no tie to the parser.
     ///
     /// The file as written, always. A repair changes what the *tree* holds and never what is wrong
