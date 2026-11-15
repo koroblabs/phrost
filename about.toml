@@ -32,7 +32,7 @@ private = { ignore = true }
 # the license's template (`Copyright (c) <year> <copyright holders>`).
 #
 # mago ships its licenses at the root of its repository, not in each crate: these are the files at
-# the commit 1.58.2 was published from (`.cargo_vcs_info.json`), fetched when the list is generated
+# the commit 1.60.1 was published from (`.cargo_vcs_info.json`), fetched when the list is generated
 # and checked against their SHA-256. A mago bump whose files changed fails the generation until the
 # new checksums are written here; every mago crate of one release shares one commit.
 
@@ -109,6 +109,17 @@ path = "LICENSE-MIT"
 license = "MIT"
 checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
 [[mago-formatter.clarify.git]]
+path = "LICENSE-APACHE"
+license = "Apache-2.0"
+checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+
+[mago-formatter-core.clarify]
+license = "MIT OR Apache-2.0"
+[[mago-formatter-core.clarify.git]]
+path = "LICENSE-MIT"
+license = "MIT"
+checksum = "0562f9f7aa4ee4f7d5e35460d447bd8c4594b7d73c535bffb3ab88c027af771d"
+[[mago-formatter-core.clarify.git]]
 path = "LICENSE-APACHE"
 license = "Apache-2.0"
 checksum = "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
