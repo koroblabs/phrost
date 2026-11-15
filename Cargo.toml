@@ -31,17 +31,14 @@ version = "0.1.3"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/koroblabs/phrost"
-homepage = "https://github.com/koroblabs/phrost"
 # Built and released as one binary, never published crate by crate: lspkit is a git dependency,
 # which crates.io does not accept.
 publish = false
-description = "A fast, resource-cheap PHP language server."
 
 [workspace.dependencies]
 # Internal — foundations
 phrost-analysis = { path = "crates/analysis" }
 phrost-body = { path = "crates/body" }
-phrost-cli = { path = "crates/cli" }
 phrost-framework = { path = "crates/framework" }
 phrost-harness = { path = "crates/lib/harness" }
 phrost-intern = { path = "crates/lib/intern" }

@@ -87,10 +87,7 @@ const RULES: &[Rule] = &[
     Rule::new("phrost-intern", &["lspkit-memsize"]),
     Rule::new("phrost-profile", &[]),
     // `lspkit-text` is `LineIndex`/`LineCol`, moved out of this crate: shared with orthra through lspkit.
-    Rule::new(
-        "phrost-model",
-        &["lspkit-arena", "lspkit-text", "phrost-intern"],
-    ),
+    Rule::new("phrost-model", &["lspkit-text", "phrost-intern"]),
     // The type *vocabulary*: resolved type references and the table that interns them. Below the
     // IR layers on purpose -- a member row carries a type, so anything that stores members needs
     // to name one. Inference is not here; it needs to walk a hierarchy, so it lives in

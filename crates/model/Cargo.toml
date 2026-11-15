@@ -7,7 +7,6 @@ publish.workspace = true
 description = "Shared identities and language primitives for the phrost layers."
 
 [dependencies]
-lspkit-arena.workspace = true
 lspkit-text.workspace = true
 phrost-intern.workspace = true
 text-size.workspace = true
