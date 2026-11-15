@@ -80,18 +80,18 @@ lspkit-walk = { git = "https://github.com/koroblabs/lspkit.git", rev = "c2d40269
 # arena-bound, so a floating minor is a rewrite waiting to happen. Cargo.lock is committed too.
 # Bump every mago crate to the same version in one go; they ship as a set and share types across
 # the seam, so a graph left half-upgraded resolves to whatever semver happens to allow.
-mago-allocator = "=1.58.2"
-mago-database = "=1.58.2"
-mago-formatter = "=1.58.2"
-mago-linter = { version = "=1.58.2", features = ["serde"] }
-mago-names = "=1.58.2"
-mago-php-version = "=1.58.2"
-mago-phpdoc-syntax = "=1.58.2"
-mago-reporting = "=1.58.2"
-mago-span = "=1.58.2"
-mago-syntax = "=1.58.2"
+mago-allocator = "=1.60.1"
+mago-database = "=1.60.1"
+mago-formatter = "=1.60.1"
+mago-linter = { version = "=1.60.1", features = ["serde"] }
+mago-names = "=1.60.1"
+mago-php-version = "=1.60.1"
+mago-phpdoc-syntax = "=1.60.1"
+mago-reporting = "=1.60.1"
+mago-span = "=1.60.1"
+mago-syntax = "=1.60.1"
 # The lexer's `Input`, which `mago-syntax` uses but does not re-export.
-mago-syntax-core = "=1.58.2"
+mago-syntax-core = "=1.60.1"
 
 # Third-party
 blake3 = "1.8.5"
