@@ -3,6 +3,49 @@
 A release's section is its notes on GitHub: the release workflow publishes the section whose heading
 names the tag's version.
 
+## 0.1.4
+
+mago -- the parser, linter and formatter underneath -- is 1.60.1, and so are the PHP stubs.
+
+**The type checker**
+
+- The stubs know more of PHP 8.4 and 8.5: `CurlSharePersistentHandle` and
+  `curl_share_init_persistent()`, `ReflectionConstant`'s methods,
+  `opcache_is_script_cached_in_file_cache()`, the `Filter\FilterException` family, and the optional
+  parameters added to the `ldap_*`, `openssl_*` and `grapheme_*` functions -- `ldap_bind($ldap)`
+  with one argument was reported as two short.
+- `ArrayObject` and `ArrayIterator` declare `__serialize()` and `__unserialize()`, which were
+  reported as undefined, and the SPL classes take PHP 8's parameter names, which is what a named
+  argument is checked against: `ArrayObject::offsetGet($key)`,
+  `new RegexIterator($iterator, $pattern)`.
+- `class_parents()` of an object no longer returns `false`; only a class name it cannot load does.
+- `$message` and `$code` on `Exception` and `Error` are typed `string` and `int`, so a subclass that
+  writes something else to them is reported: `$this->code = 'HY000'` in a `RuntimeException`.
+  `PDOException`'s `$code` stays `int|string`.
+- `ctype_digit()` no longer narrows its argument to `numeric-string`, as the stubs no longer say it
+  does: a string it answers `false` for can still be numeric (`"1.5"`).
+- A callable whose docblock return ends in `[]` keeps its return:
+  `@return callable(string): string[]` was read as a bare `callable`, so what a call to it returned
+  had no type.
+
+**The linter**
+
+- Two new rules, for a project that asks for their category in `phrost.toml`:
+  `no-unused-return-value` (redundancy) reports a private method whose result every call throws
+  away, and `prefer-null-coalescing-assignment` (best practices) suggests `$this->ids ??= $read()`
+  for `$this->ids ?? ($this->ids = $read())`.
+- `literal-named-argument` (clarity) looks at method and static calls as well as functions.
+
+**The formatter**
+
+- Some files are laid out differently from 0.1.3: reprinting six projects, 290 of 17 554 files came
+  out changed, 250 of them WordPress templates that mix HTML with `<?php echo ... ?>`. What moves is
+  line breaks, trailing commas and where a trailing comment sits, not what the code does.
+
+**Building**
+
+- phrost builds with Rust 1.100, which mago 1.60 requires; `rust-toolchain.toml` pins it.
+
 ## 0.1.3
 
 - A variable completes again in Zed. `$ap` was answered with `$app` and the editor showed nothing:

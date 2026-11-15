@@ -1125,7 +1125,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "phrost-analysis"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "phrost-harness",
@@ -1137,7 +1137,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-body"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "lspkit-arena",
@@ -1150,14 +1150,14 @@ dependencies = [
 
 [[package]]
 name = "phrost-checks"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "lspkit-arch",
 ]
 
 [[package]]
 name = "phrost-cli"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "clap",
  "expect-test",
@@ -1181,7 +1181,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-defmap"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "lspkit-arena",
@@ -1196,7 +1196,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-framework"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "ignore",
@@ -1207,7 +1207,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-harness"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "phrost-index",
  "phrost-model",
@@ -1216,7 +1216,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-hir"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "lspkit-arena",
  "phrost-intern",
@@ -1225,7 +1225,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-index"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "lspkit-arena",
@@ -1246,7 +1246,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-intern"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "lspkit-memsize",
  "rustc-hash",
@@ -1254,7 +1254,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-lower"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "lspkit-arena",
@@ -1271,7 +1271,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-lsp"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "blake3",
  "dirs",
@@ -1298,7 +1298,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-model"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "lspkit-text",
  "phrost-intern",
@@ -1307,7 +1307,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-project"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "lspkit-walk",
@@ -1324,7 +1324,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-sema"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "lspkit-memsize",
@@ -1335,7 +1335,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-stubs"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "blake3",
  "dirs",
@@ -1348,7 +1348,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-syntax"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "mago-allocator",
@@ -1361,7 +1361,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-syntax-features"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "mago-allocator",
@@ -1382,7 +1382,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-testkit"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "lspkit-fixture",
@@ -1392,14 +1392,14 @@ dependencies = [
 
 [[package]]
 name = "phrost-twig"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
 ]
 
 [[package]]
 name = "phrost-ty"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "lspkit-memsize",
@@ -1409,7 +1409,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-vfs"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "blake3",
  "phrost-model",
@@ -1419,7 +1419,7 @@ dependencies = [
 
 [[package]]
 name = "phrost-view"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "expect-test",
  "phrost-body",
